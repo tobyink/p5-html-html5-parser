@@ -1,0 +1,6 @@
+Revision history for Perl extension HTML::HTML5::Parser.
+
+0.01  Thu Nov 26 17:45:37 2009
+	- original version; created by h2xs 1.23 with options
+		-X -A -b 5.8.1 HTML::HTML5::Parser
+
