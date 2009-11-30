@@ -2140,13 +2140,13 @@ sub _tree_construction_main ($) {
           my $attr = $self->{document}->createAttributeNS( #TOBY-TODO
           @{
             $foreign_attr_xname->{$attr_name} ||
-            [undef, [undef,
+            [undef, 
                      ($nsuri) eq $SVG_NS ?
                          ($svg_attr_name->{$attr_name} || $attr_name) :
                      ($nsuri) eq $MML_NS ?
                          ($attr_name eq 'definitionurl' ?
                              'definitionURL' : $attr_name) :
-                         $attr_name]]
+                         $attr_name]
           }
         );
           $attr->setValue ($attr_t->{value});
@@ -2660,8 +2660,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS
-        ($HTML_NS, [undef,  $token->{tag_name}]);
+      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2756,7 +2755,7 @@ sub _tree_construction_main ($) {
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
-          my $attr = $self->{document}->createAttributeNS (undef, [undef, $attr_name]);
+          my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue ($attr_t->{value});
           DATA($attr, manakai_source_line => $attr_t->{line});
           DATA($attr, manakai_source_column => $attr_t->{column});
@@ -3833,7 +3832,7 @@ sub _tree_construction_main ($) {
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
-          my $attr = $self->{document}->createAttributeNS(undef, [undef, $attr_name]);
+          my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
           DATA($attr, manakai_source_line => $attr_t->{line});
           DATA($attr, manakai_source_column => $attr_t->{column});
@@ -5321,7 +5320,7 @@ sub _tree_construction_main ($) {
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
-          my $attr = $self->{document}->createAttributeNS (undef, [undef, $attr_name]);
+          my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue ($attr_t->{value});
           DATA($attr, manakai_source_line => $attr_t->{line});
           DATA($attr, manakai_source_column => $attr_t->{column});
@@ -5930,13 +5929,13 @@ sub _tree_construction_main ($) {
           my $attr = $self->{document}->create_attribute_ns ( #TOBY-TODO
           @{
             $foreign_attr_xname->{$attr_name} ||
-            [undef, [undef,
+            [undef, 
                      ($token->{tag_name} eq 'math' ? $MML_NS : $SVG_NS) eq $SVG_NS ?
                          ($svg_attr_name->{$attr_name} || $attr_name) :
                      ($token->{tag_name} eq 'math' ? $MML_NS : $SVG_NS) eq $MML_NS ?
                          ($attr_name eq 'definitionurl' ?
                              'definitionURL' : $attr_name) :
-                         $attr_name]]
+                         $attr_name]
           }
         );
           $attr->setValue($attr_t->{value});
@@ -6041,7 +6040,7 @@ sub _tree_construction_main ($) {
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
-          my $attr = $self->{document}->createSttributeNS (undef, $attr_name);
+          my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue ($attr_t->{value});
           DATA($attr, manakai_source_line => $attr_t->{line});
           DATA($attr, manakai_source_column => $attr_t->{column});
