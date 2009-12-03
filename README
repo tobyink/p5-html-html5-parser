@@ -2,7 +2,7 @@ NAME
     HTML::HTML5::Parser - Parse HTML reliably with Perl.
 
 VERSION
-    0.00_01
+    0.01
 
 SYNOPSIS
       use HTML::HTML5::Parser;
@@ -22,14 +22,17 @@ DESCRIPTION
     This library is substantially the same as the non-CPAN module
     Whatpm::HTML. Changes include:
 
-    *       Provides an XML::LibXML::Parser-like DOM interface. If you usually
-            use XML::LibXML::Parser's DOM parser, this should be a drop-in
-            solution for tag soup HTML.
+    *       Provides an XML::LibXML-like DOM interface. If you usually use
+            XML::LibXML's DOM parser, this should be a drop-in solution for
+            tag soup HTML.
 
     *       Constructs an XML::LibXML::Document as the result of parsing.
 
     *       Via bundling and modifications, removed external dependencies on
             non-CPAN packages.
+
+            NOTE: This module uses Inline::Python, including the Python
+            "chardet" package which can be installed using easy_install.
 
   Constructor
     "new"
@@ -49,9 +52,16 @@ DESCRIPTION
             "LWP::UserAgent" object to be used when retrieving URLs.
 
             If requesting a URL and the response Content-Type header indicates
-            an XML-based media type (such as XHTML), XML::LibXML's parser will
-            be used automatically. (Instead of the tag soup parser.) Tag soup
-            parsing can be forced using the option 'force_html'.
+            an XML-based media type (such as XHTML), XML::LibXML::Parser will
+            be used automatically (instead of the tag soup parser). Tag soup
+            parsing can be forced using the option 'force_html'. If an options
+            hashref was passed, parse_file will set $options->{'parser_used'}
+            to the name of the class used to parse the URL, to allow the
+            calling code to double-check which parser was used afterwards.
+
+            If an options hashref was passed, parse_file will set
+            $options->{'response'} to the HTTP::Response object obtained by
+            retrieving the URI.
 
     "parse_fh", "parse_html_fh"
               $doc = $parser->parse_fh( $io_fh [,\%opts] );
