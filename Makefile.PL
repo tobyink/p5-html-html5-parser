@@ -13,6 +13,7 @@ abstract_from       'lib/HTML/HTML5/Parser.pm';
 
 test_requires       'Test::More' => '0.61';
 
+requires            'Inline::Python' => 0;
 requires            'LWP::UserAgent' => 0;
 requires            'XML::LibXML'    => 0;
 requires            'Error'          => 0;

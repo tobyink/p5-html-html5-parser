@@ -6,7 +6,7 @@ HTML::HTML5::Parser - Parse HTML reliably with Perl.
 
 =head1 VERSION
 
-0.00_01
+0.01
 
 =head1 SYNOPSIS
 
@@ -30,7 +30,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.00_01';
+our $VERSION = '0.01';
 
 use Carp;
 use HTML::HTML5::Parser::TagSoupParser;
@@ -44,11 +44,13 @@ Changes include:
 
 =over 8
 
-=item * Provides an XML::LibXML::Parser-like DOM interface. If you usually use XML::LibXML::Parser's DOM parser, this should be a drop-in solution for tag soup HTML.
+=item * Provides an XML::LibXML-like DOM interface. If you usually use XML::LibXML's DOM parser, this should be a drop-in solution for tag soup HTML.
 
 =item * Constructs an XML::LibXML::Document as the result of parsing.
 
 =item * Via bundling and modifications, removed external dependencies on non-CPAN packages.
+
+NOTE: This module uses Inline::Python, including the Python "chardet" package which can be installed using easy_install.
 
 =back
 
@@ -92,9 +94,15 @@ Options include 'encoding' to indicate file encoding (e.g.
 object to be used when retrieving URLs.
 
 If requesting a URL and the response Content-Type header indicates
-an XML-based media type (such as XHTML), XML::LibXML's parser
-will be used automatically. (Instead of the tag soup parser.) Tag
-soup parsing can be forced using the option 'force_html'.
+an XML-based media type (such as XHTML), XML::LibXML::Parser
+will be used automatically (instead of the tag soup parser). Tag
+soup parsing can be forced using the option 'force_html'. If an options
+hashref was passed, parse_file will set $options->{'parser_used'} to
+the name of the class used to parse the URL, to allow the calling code
+to double-check which parser was used afterwards.
+
+If an options hashref was passed, parse_file will set $options->{'response'}
+to the HTTP::Response object obtained by retrieving the URI.
 
 =cut
 
@@ -102,7 +110,7 @@ sub parse_file
 {
 	my $self   = shift;
 	my $file   = shift;
-	my $opts   = shift;
+	my $opts   = shift || {};
 	
 	unless (UNIVERSAL::isa($file, 'URI'))
 	{
@@ -141,9 +149,12 @@ sub parse_file
 	my $c_type  = $response->headers->content_type;
 	my $charset = $response->headers->content_type_charset;
 	
+	$opts->{'response'} = $response;
+	
 	if ($c_type =~ /xml/i && !$opts->{'force_html'})
 	{
-		my $xml_parser = XML::LibXML::Parser->new;
+		$opts->{'parser_used'} = 'XML::LibXML::Parser';
+		my $xml_parser = XML::LibXML->new;
 		$xml_parser->validation(0);
 		$xml_parser->recover(2);
 		$xml_parser->base_uri($response->base);
@@ -174,7 +185,7 @@ sub parse_fh
 {
 	my $self   = shift;
 	my $handle = shift;
-	my $opts   = shift;
+	my $opts   = shift || {};
 	
 	my $string = '';
 	while (<$handle>)
@@ -202,24 +213,25 @@ sub parse_string
 {
 	my $self = shift;
 	my $text = shift;
-	my $opts = shift;
+	my $opts = shift || {};
 	
+	$opts->{'parser_used'} = 'HTML::HTML5::Parser';
 	my $dom = XML::LibXML::Document->createDocument;
 	
-	if (defined $opts->{'encoding'})
-	{
-		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($text, $opts->{'encoding'}, $dom, sub{
-			my $err = \@_;
-			push @{$self->{'errors'}}, $err;
-			});
-	}
-	else
-	{
+#	if (defined $opts->{'encoding'})
+#	{
+#		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($text, $opts->{'encoding'}, $dom, sub{
+#			my $err = \@_;
+#			push @{$self->{'errors'}}, $err;
+#			});
+#	}
+#	else
+#	{
 		HTML::HTML5::Parser::TagSoupParser->parse_char_string($text, $dom, sub{
 			my $err = \@_;
 			push @{$self->{'errors'}}, $err;
 			});
-	}
+#	}
 	
 	return $dom;
 }

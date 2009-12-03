@@ -7,7 +7,7 @@ use 5.008001;
 use strict;
 #use warnings;
 
-our $VERSION='0.00_01';
+our $VERSION='0.01';
 use Error qw(:try);
 
 our $DATA;
@@ -476,8 +476,8 @@ sub parse_byte_stream ($$$$;$$) {
 
     ## Step 6
     require HTML::HTML5::Parser::Charset::UniversalCharDet;
-    $charset_name = HTML::HTML5::Parser::Charset::UniversalCharDet->detect_byte_string
-        ($byte_buffer);
+    $charset_name = HTML::HTML5::Parser::Charset::UniversalCharDet->detect_byte_string($byte_buffer)
+		if $byte_buffer;
     if (defined $charset_name) {
       $charset = HTML::HTML5::Parser::Charset::Info->get_by_html_name ($charset_name);
 
@@ -677,7 +677,7 @@ sub parse_char_stream ($$$;$$) {
   ## Confidence: irrelevant.
   $self->{confident} = 1 unless exists $self->{confident};
 
-  $self->{document}->input_encoding ($self->{input_encoding})
+  $self->{document}->setEncoding($self->{input_encoding})
       if defined $self->{input_encoding};
 ## TODO: |{input_encoding}| is needless?
 

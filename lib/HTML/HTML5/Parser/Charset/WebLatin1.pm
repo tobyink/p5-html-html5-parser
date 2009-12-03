@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 package HTML::HTML5::Parser::Charset::WebLatin1;
 use strict;
-our $VERSION='0.00_01';
+our $VERSION='0.01';
 
 ## NOTE: This module does not expect that its standalone uses.
 ## See Message::Charset::Info for how it is used.
