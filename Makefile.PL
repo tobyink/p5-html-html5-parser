@@ -13,17 +13,20 @@ abstract_from       'lib/HTML/HTML5/Parser.pm';
 
 test_requires       'Test::More' => '0.61';
 
-requires            'Inline::Python' => 0;
 requires            'LWP::UserAgent' => 0;
 requires            'XML::LibXML'    => 0;
 requires            'Error'          => 0;
+requires            'HTML::Encoding' => '0.55';
 
+auto_set_homepage;
+auto_set_bugtracker;
+
+install_script 'html2xhtml';
+
+include 'Test::Signature';
 auto_install;
+WriteAll(
+	'meta' => 1,
+	'sign' => 1,
+	);
 
-sign;
-
-WriteAll;
-
-use Pod::Text;
-my $parser = Pod::Text->new (sentence => 0, width => 78);
-$parser->parse_from_file('lib/HTML/HTML5/Parser.pm', 'README');

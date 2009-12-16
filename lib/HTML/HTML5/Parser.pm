@@ -6,7 +6,7 @@ HTML::HTML5::Parser - Parse HTML reliably with Perl.
 
 =head1 VERSION
 
-0.01
+0.02
 
 =head1 SYNOPSIS
 
@@ -30,7 +30,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Carp;
 use HTML::HTML5::Parser::TagSoupParser;
@@ -95,11 +95,15 @@ object to be used when retrieving URLs.
 
 If requesting a URL and the response Content-Type header indicates
 an XML-based media type (such as XHTML), XML::LibXML::Parser
-will be used automatically (instead of the tag soup parser). Tag
-soup parsing can be forced using the option 'force_html'. If an options
-hashref was passed, parse_file will set $options->{'parser_used'} to
-the name of the class used to parse the URL, to allow the calling code
-to double-check which parser was used afterwards.
+will be used automatically (instead of the tag soup parser). The XML
+parser can be told to use a DTD catalogue by setting the option
+'xml_catalogue' to the filename of the catalogue.
+
+HTML (tag soup) parsing can be forced using the option 'force_html', even
+when an XML media type is returned. If an options hashref was passed,
+parse_file will set $options->{'parser_used'} to the name of the class used
+to parse the URL, to allow the calling code to double-check which parser
+was used afterwards.
 
 If an options hashref was passed, parse_file will set $options->{'response'}
 to the HTTP::Response object obtained by retrieving the URI.
@@ -135,7 +139,6 @@ sub parse_file
 		$ua->agent("HTML::HTML5::Parser/".$VERSION." ");
 		$ua->default_header('Accept' => 'text/html, '
 			.'application/xhtml+xml;q=0.9, '
-			.'application/vnd.wap.xhtml+xml;q=0.5, '
 			.'application/xml;q=0.1, '
 			.'text/xml;q-0.1');
 		$ua->parse_head(0);
@@ -158,6 +161,8 @@ sub parse_file
 		$xml_parser->validation(0);
 		$xml_parser->recover(2);
 		$xml_parser->base_uri($response->base);
+		$xml_parser->load_catalog($opts->{'xml_catalogue'})
+			if -r $opts->{'xml_catalogue'};
 		return $xml_parser->parse_string($content);
 	}
 	
@@ -218,20 +223,20 @@ sub parse_string
 	$opts->{'parser_used'} = 'HTML::HTML5::Parser';
 	my $dom = XML::LibXML::Document->createDocument;
 	
-#	if (defined $opts->{'encoding'})
-#	{
-#		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($text, $opts->{'encoding'}, $dom, sub{
-#			my $err = \@_;
-#			push @{$self->{'errors'}}, $err;
-#			});
-#	}
-#	else
-#	{
+	if (defined $opts->{'encoding'} || 1)
+	{
+		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($opts->{'encoding'}, $text, $dom, sub{
+			my $err = \@_;
+			push @{$self->{'errors'}}, $err;
+			});
+	}
+	else
+	{
 		HTML::HTML5::Parser::TagSoupParser->parse_char_string($text, $dom, sub{
 			my $err = \@_;
 			push @{$self->{'errors'}}, $err;
 			});
-#	}
+	}
 	
 	return $dom;
 }

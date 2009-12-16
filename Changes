@@ -4,3 +4,6 @@ Revision history for Perl extension HTML::HTML5::Parser.
 	- original version; created by h2xs 1.23 with options
 		-X -A -b 5.8.1 HTML::HTML5::Parser
 
+0.02
+	- Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package.
+	- bundle html2xhtml tool.

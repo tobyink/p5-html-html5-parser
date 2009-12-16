@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+use HTML::HTML5::Parser;
+
+my $uri = shift @ARGV
+	or die "Please specify an input URL or filename.\n";
+
+my $parser = HTML::HTML5::Parser->new;
+my $dom    = $parser->parse_file($uri);
+
+print $dom->toString;

@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
 use strict;
-our $VERSION='0.01';
+our $VERSION='0.02';
 
 BEGIN {
   require Exporter;
