@@ -50,8 +50,6 @@ Changes include:
 
 =item * Via bundling and modifications, removed external dependencies on non-CPAN packages.
 
-NOTE: This module uses Inline::Python, including the Python "chardet" package which can be installed using easy_install.
-
 =back
 
 =head2 Constructor
