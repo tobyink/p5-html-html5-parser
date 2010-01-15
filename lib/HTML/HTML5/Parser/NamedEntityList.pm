@@ -2165,7 +2165,7 @@ and Opera Software ASA.
 
 Copyright 2007 Wakaba <w@suika.fam.cx>.
 
-Copyright 2009 Toby Inkster <tobyink@cpan.org>.
+Copyright 2009-2010 Toby Inkster <tobyink@cpan.org>.
 
 You are granted a license to use, reproduce and create derivative works 
 of this document.

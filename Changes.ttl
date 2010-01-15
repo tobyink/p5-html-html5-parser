@@ -1,0 +1,101 @@
+#############################################################
+
+@prefix :        <http://usefulinc.com/ns/doap#> .
+@prefix dcs:     <http://ontologi.es/doap-changeset#> .
+@prefix dc:      <http://purl.org/dc/terms/> .
+@prefix foaf:    <http://xmlns.com/foaf/0.1/> .
+@prefix my:      <http://search.cpan.org/dist/HTML-HTML5-Parser/#> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix toby:    <http://tobyinkster.co.uk/#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+
+#############################################################
+
+<>
+
+	dc:title         "Changes for HTML::HTML5::Parser" ;
+	dc:description   "Revision history for Perl extension HTML::HTML5::Parser."@en ;
+	dc:subject       my:project ;
+	dc:creator       toby:i .
+
+#############################################################
+
+my:v_0_00_01
+
+	a               :Version ;
+	dc:issued       "2009-12-01"^^xsd:date ;
+	:revision       "0.00_01"^^xsd:string ;
+	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz> ;
+	rdfs:label      "Developer preview"@en  .
+	
+my:v_0_01
+
+	a               :Version ;
+	dc:issued       "2009-12-03"^^xsd:date ;
+	:revision       "0.01"^^xsd:string ;
+	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz> ;
+	rdfs:label      "Original version"@en .
+
+my:v_0_02
+
+	a               :Version ;
+	dc:issued       "2009-12-16"^^xsd:date ;
+	:revision       "0.02"^^xsd:string ;
+	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0_01 ;
+		dcs:item
+			[ rdfs:label "Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package."@en ] ,
+			[ rdfs:label "Bundle the html2xhtml tool."@en ; a dcs:Addition ]
+		] .
+
+my:v_0_03
+
+	a               :Version ;
+	dc:issued       "2010-01-15"^^xsd:date ;
+	:revision       "0.03"^^xsd:string ;
+	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0_02 ;
+		dcs:item
+			[ rdfs:label "Module didn't use URI::file properly."@en ; a dcs:Bugfix ; rdfs:comment "Thanks shellac" ] ,
+			[ rdfs:label "Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)"@en ; a dcs:Update ] ,
+			[ rdfs:label "Copyright 2010."@en ; a dcs:Update ]
+		] .
+
+#############################################################
+
+my:project
+
+	a               :Project ;
+	:name           "HTML-HTML5-Parser" ;
+	:shortdesc      "Parse HTML reliably with Perl"@en ;
+	:programming-language  "Perl" ;
+	:homepage       <http://search.cpan.org/dist/HTML-HTML5-Parser/> ;
+	:download-page  <http://search.cpan.org/dist/HTML-HTML5-Parser/> ;
+	:bug-database   <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser> ;
+	:repository     [ a :SVNRepository ; :browse <http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Parser/> ] ;
+	:maintainer     toby:i ;
+	:developer      toby:i , my:wakaba ;
+	:documenter     toby:i ;
+	:tester         toby:i ;
+	:created        "2009-11-26"^^xsd:date ;
+	:license        <http://dev.perl.org/licenses/> ;
+	:release        my:v_0_00_01 , my:v_0_01 , my:v_0_02 , my:v_0_03 .
+
+#############################################################
+
+toby:i
+
+	a               foaf:Person ;
+	foaf:name       "Toby Inkster" ;
+	foaf:homepage   <http://tobyinkster.co.uk/> ;
+	foaf:page       <http://search.cpan.org/~tobyink/> ;
+	foaf:mbox       <mailto:tobyink@cpan.org> .
+
+my:wakaba
+
+	a               foaf:Person ;
+	foaf:name       "Wakaba" .
+
+#############################################################

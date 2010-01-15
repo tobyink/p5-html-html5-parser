@@ -1,9 +1,27 @@
-Revision history for Perl extension HTML::HTML5::Parser.
+############################################################################
+## Changes for HTML::HTML5::Parser #########################################
+############################################################################
 
-0.01  Thu Nov 26 17:45:37 2009
-	- original version; created by h2xs 1.23 with options
-		-X -A -b 5.8.1 HTML::HTML5::Parser
+<http://search.cpan.org/dist/HTML-HTML5-Parser/#project>
+========================================================
 
-0.02
-	- Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package.
-	- bundle html2xhtml tool.
+Created:      2009-11-26
+Home page:    <http://search.cpan.org/dist/HTML-HTML5-Parser/>
+Bug tracker:  <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser>
+Maintainer:   Toby Inkster <mailto:tobyink@cpan.org>
+
+0.03 [2010-01-15]
+ - (Update) Upgrade distribution to my new packaging regime (auto-generated
+   changelogs, etc)
+ - (Update) Copyright 2010.
+ - (Bugfix) Module didn't use URI::file properly.
+
+0.02 [2009-12-16]
+ - (Addition) Bundle the html2xhtml tool.
+ - Replace Inline::Python encoding detection with weaker, but native Perl
+   HTML::Encoding package.
+
+0.01 [2009-12-03] # Original version
+
+0.00_01 [2009-12-01] # Developer preview
+

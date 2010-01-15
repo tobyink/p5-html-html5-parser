@@ -3,7 +3,7 @@ package HTML::HTML5::Parser::Charset::UniversalCharDet;
 use strict;
 use HTML::Encoding qw(encoding_from_first_chars encoding_from_html_document);
 
-our $VERSION='0.02';
+our $VERSION='0.03';
 our $DEBUG;
 
 sub _detect ($) {
@@ -31,7 +31,7 @@ sub detect_byte_string ($$) {
 } # detect_byte_string
 
 #Copyright 2007 Wakaba <w@suika.fam.cx>
-#Copyright 2009 Toby Inkster <tobyink@cpan.org>
+#Copyright 2009-2010 Toby Inkster <tobyink@cpan.org>
 #
 #This library is free software; you can redistribute it
 #and/or modify it under the same terms as Perl itself.

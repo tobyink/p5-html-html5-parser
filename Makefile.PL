@@ -3,13 +3,16 @@ use warnings;
 
 use inc::Module::Install;
 
-license             'perl';
+my $dist = 'HTML-HTML5-Parser';
+my $fn   = "lib/$dist.pm"; $fn =~ s#-#/#g;
 
-name                'HTML-HTML5-Parser';
+name                $dist;
+perl_version_from   $fn;
+version_from        $fn;
+abstract_from       $fn;
+readme_from         $fn;
 author              'Toby Inkster <tobyink@cpan.org>';
-perl_version_from   'lib/HTML/HTML5/Parser.pm';
-version_from        'lib/HTML/HTML5/Parser.pm';
-abstract_from       'lib/HTML/HTML5/Parser.pm';
+license             'perl';
 
 test_requires       'Test::More' => '0.61';
 
@@ -18,8 +21,14 @@ requires            'XML::LibXML'    => 0;
 requires            'Error'          => 0;
 requires            'HTML::Encoding' => '0.55';
 
-auto_set_homepage;
-auto_set_bugtracker;
+resources(
+	'homepage'   => "http://search.cpan.org/dist/$dist/",
+	'repository' => "http://goddamn.co.uk/viewvc/perlmods/$dist/",
+	'bugtracker' => "http://rt.cpan.org/Dist/Display.html?Queue=$dist",
+	);
+
+write_doap_changes;
+write_doap_changes_xml;
 
 install_script 'html2xhtml';
 

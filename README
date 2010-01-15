@@ -2,7 +2,7 @@ NAME
     HTML::HTML5::Parser - Parse HTML reliably with Perl.
 
 VERSION
-    0.01
+    0.03
 
 SYNOPSIS
       use HTML::HTML5::Parser;
@@ -31,9 +31,6 @@ DESCRIPTION
     *       Via bundling and modifications, removed external dependencies on
             non-CPAN packages.
 
-            NOTE: This module uses Inline::Python, including the Python
-            "chardet" package which can be installed using easy_install.
-
   Constructor
     "new"
               $parser = HTML::HTML5::Parser->new;
@@ -51,13 +48,19 @@ DESCRIPTION
             'utf-8') and 'user_agent' which should be a blessed
             "LWP::UserAgent" object to be used when retrieving URLs.
 
-            If requesting a URL and the response Content-Type header indicates
-            an XML-based media type (such as XHTML), XML::LibXML::Parser will
-            be used automatically (instead of the tag soup parser). Tag soup
-            parsing can be forced using the option 'force_html'. If an options
-            hashref was passed, parse_file will set $options->{'parser_used'}
-            to the name of the class used to parse the URL, to allow the
-            calling code to double-check which parser was used afterwards.
+            If requesting a URL and the response Content-Type header
+            indicates an XML-based media type (such as XHTML),
+            XML::LibXML::Parser will be used automatically (instead of the
+            tag soup parser). The XML parser can be told to use a DTD
+            catalogue by setting the option 'xml_catalogue' to the filename
+            of the catalogue.
+
+            HTML (tag soup) parsing can be forced using the option
+            'force_html', even when an XML media type is returned. If an
+            options hashref was passed, parse_file will set
+            $options->{'parser_used'} to the name of the class used to parse
+            the URL, to allow the calling code to double-check which parser
+            was used afterwards.
 
             If an options hashref was passed, parse_file will set
             $options->{'response'} to the HTTP::Response object obtained by
@@ -81,12 +84,12 @@ DESCRIPTION
             'utf-8').
 
     The push parser and SAX-based parser are not supported. Trying to change
-    an option (such as recover_silently) will make HTML::HTML5::Parser carp a
-    warning. (But you can inspect the options.)
+    an option (such as recover_silently) will make HTML::HTML5::Parser carp
+    a warning. (But you can inspect the options.)
 
   Additional Methods
-    The module provides a few additional methods to obtain additional, non-DOM
-    data from DOM nodes.
+    The module provides a few additional methods to obtain additional,
+    non-DOM data from DOM nodes.
 
     "compat_mode"
               $mode = $parser->compat_mode( $doc );
@@ -112,8 +115,8 @@ DESCRIPTION
               $line = $parser->source_line( $node );
 
             In scalar context, "source_line" returns the line number of the
-            source code that started a particular node (element, attribute or
-            comment).
+            source code that started a particular node (element, attribute
+            or comment).
 
             In list context, returns a line/column pair.
 
@@ -128,9 +131,9 @@ AUTHOR
 COPYRIGHT AND LICENSE
     Copyright (C) 2007-2009 by Wakaba
 
-    Copyright (C) 2009 by Toby Inkster
+    Copyright (C) 2009-2010 by Toby Inkster
 
     This library is free software; you can redistribute it and/or modify it
-    under the same terms as Perl itself, either Perl version 5.8.1 or, at your
-    option, any later version of Perl 5 you may have available.
+    under the same terms as Perl itself, either Perl version 5.8.1 or, at
+    your option, any later version of Perl 5 you may have available.
 
