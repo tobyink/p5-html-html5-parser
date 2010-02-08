@@ -25,7 +25,7 @@ my:v_0_00_01
 	a               :Version ;
 	dc:issued       "2009-12-01"^^xsd:date ;
 	:revision       "0.00_01"^^xsd:string ;
-	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz> ;
 	rdfs:label      "Developer preview"@en  .
 	
 my:v_0_01
@@ -33,7 +33,7 @@ my:v_0_01
 	a               :Version ;
 	dc:issued       "2009-12-03"^^xsd:date ;
 	:revision       "0.01"^^xsd:string ;
-	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz> ;
 	rdfs:label      "Original version"@en .
 
 my:v_0_02
@@ -41,7 +41,7 @@ my:v_0_02
 	a               :Version ;
 	dc:issued       "2009-12-16"^^xsd:date ;
 	:revision       "0.02"^^xsd:string ;
-	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0_01 ;
 		dcs:item
@@ -54,7 +54,7 @@ my:v_0_03
 	a               :Version ;
 	dc:issued       "2010-01-15"^^xsd:date ;
 	:revision       "0.03"^^xsd:string ;
-	:file-release   <http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0_02 ;
 		dcs:item
