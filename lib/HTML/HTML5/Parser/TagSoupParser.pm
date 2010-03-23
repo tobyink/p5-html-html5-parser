@@ -5521,6 +5521,7 @@ sub _tree_construction_main ($) {
       } elsif ($token->{tag_name} eq 'a') {
         AFE: for my $i (reverse 0..$#$active_formatting_elements) {
           my $node = $active_formatting_elements->[$i];
+			 no warnings;
           if ($node->[1] == A_EL) {
             
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'in a:a', token => $token);
