@@ -17,13 +17,13 @@
   </rdf:Description>
   <Version rdf:about="http://search.cpan.org/dist/HTML-HTML5-Parser/#v_0_00_01">
     <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-01</dc:issued>
-    <file-release rdf:resource="http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz"/>
+    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz"/>
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.00_01</revision>
     <rdfs:label xml:lang="en">Developer preview</rdfs:label>
   </Version>
   <Version rdf:about="http://search.cpan.org/dist/HTML-HTML5-Parser/#v_0_01">
     <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-03</dc:issued>
-    <file-release rdf:resource="http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz"/>
+    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz"/>
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.01</revision>
     <rdfs:label xml:lang="en">Original version</rdfs:label>
   </Version>
@@ -44,7 +44,7 @@
       </rdf:Description>
     </dcs:changeset>
     <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-16</dc:issued>
-    <file-release rdf:resource="http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz"/>
+    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz"/>
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.02</revision>
   </Version>
   <Version rdf:about="http://search.cpan.org/dist/HTML-HTML5-Parser/#v_0_03">
@@ -70,7 +70,7 @@
       </rdf:Description>
     </dcs:changeset>
     <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-01-15</dc:issued>
-    <file-release rdf:resource="http://backpan.perl.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz"/>
+    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz"/>
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.03</revision>
   </Version>
   <Project rdf:about="http://search.cpan.org/dist/HTML-HTML5-Parser/#project">

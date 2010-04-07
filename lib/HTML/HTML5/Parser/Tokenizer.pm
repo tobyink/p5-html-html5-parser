@@ -2,6 +2,19 @@ package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
 use strict;
 our $VERSION='0.03';
 
+## This module implements the tokenization phase of both HTML5 and
+## XML5.  Notes like this are usually based on the latest HTML
+## specification.  Since XML is different from HTML, and since XML5
+## specification has not been maintained any more, there is a few
+## differences from HTML's tokenization.  Such differences are marked
+## by prefix "XML5:".
+
+## Warnings that depend on the HTML/XML input stream, such as ones
+## related to surrogate code positions, are not useful.
+no warnings 'utf8';
+
+## ------ Token types ------
+
 BEGIN {
   require Exporter;
   push our @ISA, 'Exporter';
@@ -43,10 +56,6 @@ BEGIN {
   );
 }
 
-## NOTE: Differences from the XML5 draft are marked as "XML5:".
-
-## Token types
-
 sub DOCTYPE_TOKEN () { 1 } ## XML5: No DOCTYPE token.
 sub COMMENT_TOKEN () { 2 }
 sub START_TAG_TOKEN () { 3 }
@@ -74,23 +83,34 @@ package HTML::HTML5::Parser::TagSoupParser;
 
 BEGIN { HTML::HTML5::Parser::Tokenizer->import (':token') }
 
-## Content model flags
-
-sub CM_ENTITY () { 0b001 } # & markup in data
-sub CM_LIMITED_MARKUP () { 0b010 } # < markup in data (limited)
-sub CM_FULL_MARKUP () { 0b100 } # < markup in data (any)
-
-sub PLAINTEXT_CONTENT_MODEL () { 0 }
-sub CDATA_CONTENT_MODEL () { CM_LIMITED_MARKUP }
-sub RCDATA_CONTENT_MODEL () { CM_ENTITY | CM_LIMITED_MARKUP }
-sub PCDATA_CONTENT_MODEL () { CM_ENTITY | CM_FULL_MARKUP }
-
-## Tokenizer states
+## ------ Tokenizer states ------
 
 sub DATA_STATE () { 0 }
-#sub ENTITY_DATA_STATE () { 1 }
+sub RCDATA_STATE () { 107 }
+sub RAWTEXT_STATE () { 108 }
+sub SCRIPT_DATA_STATE () { 109 }
+sub PLAINTEXT_STATE () { 110 }
 sub TAG_OPEN_STATE () { 2 }
+sub RCDATA_LT_STATE () { 111 }
+sub RAWTEXT_LT_STATE () { 112 }
+sub SCRIPT_DATA_LT_STATE () { 113 }
 sub CLOSE_TAG_OPEN_STATE () { 3 }
+sub RCDATA_END_TAG_OPEN_STATE () { 114 }
+sub RAWTEXT_END_TAG_OPEN_STATE () { 115 }
+sub SCRIPT_DATA_END_TAG_OPEN_STATE () { 116 }
+sub SCRIPT_DATA_ESCAPE_START_STATE () { 1 }
+sub SCRIPT_DATA_ESCAPE_START_DASH_STATE () { 12 }
+sub SCRIPT_DATA_ESCAPED_STATE () { 117 }
+sub SCRIPT_DATA_ESCAPED_DASH_STATE () { 118 }
+sub SCRIPT_DATA_ESCAPED_DASH_DASH_STATE () { 119 }
+sub SCRIPT_DATA_ESCAPED_LT_STATE () { 120 }
+sub SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE () { 121 }
+sub SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE () { 122 }
+sub SCRIPT_DATA_DOUBLE_ESCAPED_STATE () { 123 }
+sub SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE () { 124 }
+sub SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE () { 125 }
+sub SCRIPT_DATA_DOUBLE_ESCAPED_LT_STATE () { 126 }
+sub SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE () { 127 }
 sub TAG_NAME_STATE () { 4 }
 sub BEFORE_ATTRIBUTE_NAME_STATE () { 5 }
 sub ATTRIBUTE_NAME_STATE () { 6 }
@@ -99,20 +119,20 @@ sub BEFORE_ATTRIBUTE_VALUE_STATE () { 8 }
 sub ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE () { 9 }
 sub ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE () { 10 }
 sub ATTRIBUTE_VALUE_UNQUOTED_STATE () { 11 }
-#sub ENTITY_IN_ATTRIBUTE_VALUE_STATE () { 12 }
 sub MARKUP_DECLARATION_OPEN_STATE () { 13 }
 sub COMMENT_START_STATE () { 14 }
 sub COMMENT_START_DASH_STATE () { 15 }
 sub COMMENT_STATE () { 16 }
 sub COMMENT_END_STATE () { 17 }
 sub COMMENT_END_BANG_STATE () { 102 }
-sub COMMENT_END_SPACE_STATE () { 103 } ## LAST
+sub COMMENT_END_SPACE_STATE () { 103 }
 sub COMMENT_END_DASH_STATE () { 18 }
 sub BOGUS_COMMENT_STATE () { 19 }
 sub DOCTYPE_STATE () { 20 }
 sub BEFORE_DOCTYPE_NAME_STATE () { 21 }
 sub DOCTYPE_NAME_STATE () { 22 }
 sub AFTER_DOCTYPE_NAME_STATE () { 23 }
+sub AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE () { 104 }
 sub BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE () { 24 }
 sub DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE () { 25 }
 sub DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE () { 26 }
@@ -120,6 +140,8 @@ sub AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE () { 27 }
 sub BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE () { 28 }
 sub DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE () { 29 }
 sub DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE () { 30 }
+sub BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDS_STATE () { 105 }
+sub AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE () { 106 }
 sub AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE () { 31 }
 sub BOGUS_DOCTYPE_STATE () { 32 }
 sub AFTER_ATTRIBUTE_VALUE_QUOTED_STATE () { 33 }
@@ -128,23 +150,25 @@ sub CDATA_SECTION_STATE () { 35 }
 sub MD_HYPHEN_STATE () { 36 } # "markup declaration open state" in the spec
 sub MD_DOCTYPE_STATE () { 37 } # "markup declaration open state" in the spec
 sub MD_CDATA_STATE () { 38 } # "markup declaration open state" in the spec
-sub CDATA_RCDATA_CLOSE_TAG_STATE () { 39 } # "close tag open state" in the spec
+#sub CDATA_RCDATA_CLOSE_TAG_STATE () { 39 } # "close tag open state" in the spec
 sub CDATA_SECTION_MSE1_STATE () { 40 } # "CDATA section state" in the spec
 sub CDATA_SECTION_MSE2_STATE () { 41 } # "CDATA section state" in the spec
 sub PUBLIC_STATE () { 42 } # "after DOCTYPE name state" in the spec
 sub SYSTEM_STATE () { 43 } # "after DOCTYPE name state" in the spec
+##
 ## NOTE: "Entity data state", "entity in attribute value state", and
-## "consume a character reference" algorithm are jointly implemented
-## using the following six states:
+## the "consume a character reference" algorithm, are jointly
+## implemented as the following six states:
 sub ENTITY_STATE () { 44 }
 sub ENTITY_HASH_STATE () { 45 }
 sub NCR_NUM_STATE () { 46 }
 sub HEXREF_X_STATE () { 47 }
 sub HEXREF_HEX_STATE () { 48 }
 sub ENTITY_NAME_STATE () { 49 }
-sub PCDATA_STATE () { 50 } # "data state" in the spec
-
+##
 ## XML-only states
+sub DATA_MSE1_STATE () { 50 }
+sub DATA_MSE2_STATE () { 128 } # last
 sub PI_STATE () { 51 }
 sub PI_TARGET_STATE () { 52 }
 sub PI_TARGET_AFTER_STATE () { 53 }
@@ -197,13 +221,17 @@ sub AFTER_CM_GROUP_CLOSE_STATE () { 99 }
 sub AFTER_MD_DEF_STATE () { 100 }
 sub BOGUS_MD_STATE () { 101 }
 
-## Tree constructor state constants (see HTML::HTML5::Parser for the full
-## list and descriptions)
+## ------ Tree constructor state constants ------
+
+## Whether the parsed string is in the foreign island or not affect
+## how tokenization is done, unfortunately.  These are a copy of some
+## of tokenization state constants.  See Whatpm::HTML for the full
+## list and the descriptions for constants.
 
 sub IN_FOREIGN_CONTENT_IM () { 0b100000000000 }
 sub FOREIGN_EL () { 0b1_00000000000 }
 
-## Character reference mappings
+## ------ Character reference mappings ------
 
 my $charref_map = {
   0x00 => 0xFFFD, # REPLACEMENT CHARACTER
@@ -241,14 +269,26 @@ my $charref_map = {
   0x9E => 0x017E,
   0x9F => 0x0178,
 }; # $charref_map
+$charref_map->{$_} = 0xFFFD # REPLACEMENT CHARACTER
+    for 0xD800..0xDFFF;
 $charref_map->{$_} = $_
     for 0x0001..0x0008, 0x000B, 0x000E..0x001F, 0x007F, 
-        0xD800..0xDFFF, 0xFDD0..0xFDEF,
+        0xFDD0..0xFDEF,
         0xFFFE, 0xFFFF, 0x1FFFE, 0x1FFFF, 0x2FFFE, 0x2FFFF, 0x3FFFE, 0x3FFFF,
         0x4FFFE, 0x4FFFF, 0x5FFFE, 0x5FFFF, 0x6FFFE, 0x6FFFF, 0x7FFFE,
         0x7FFFF, 0x8FFFE, 0x8FFFF, 0x9FFFE, 0x9FFFF, 0xAFFFE, 0xAFFFF,
         0xBFFFE, 0xBFFFF, 0xCFFFE, 0xCFFFF, 0xDFFFE, 0xDFFFF, 0xEFFFE,
         0xEFFFF, 0xFFFFE, 0xFFFFF, 0x10FFFE, 0x10FFFF;
+
+## ------ Special character-like constants ------
+
+## The "EOF" pseudo-character in the HTML parsing algorithm.
+sub EOF_CHAR () { -1 }
+
+## A pseudo-character code that can never appear in the input stream.
+sub NEVER_CHAR () { -2 }
+
+## ------ The tokenizer ------
 
 ## Implementations MUST act as if state machine in the spec
 
@@ -262,11 +302,9 @@ sub _initialize_tokenizer ($) {
   #$self->{is_xml} (if XML)
 
   $self->{state} = DATA_STATE; # MUST
-  $self->{s_kwd} = ''; # Data state keyword
   #$self->{kwd} = ''; # State-dependent keyword; initialized when used
   #$self->{entity__value}; # initialized when used
   #$self->{entity__match}; # initialized when used
-  $self->{content_model} = PCDATA_CONTENT_MODEL; # be
   undef $self->{ct}; # current token
   undef $self->{ca}; # current attribute
   undef $self->{last_stag_name}; # last emitted start tag name
@@ -334,14 +372,845 @@ my $is_space = {
   0x0020 => 1, # SPACE (SP)
 };
 
+sub KEY_ELSE_CHAR () { 255 }
+sub KEY_ULATIN_CHAR () { 254 }
+sub KEY_LLATIN_CHAR () { 253 }
+sub KEY_EOF_CHAR () { 252 }
+sub KEY_SPACE_CHAR () { 251 }
+
+my $Action;
+my $XMLAction;
+$Action->[DATA_STATE]->[0x0026] = {
+  name => 'data &',
+  state => ENTITY_STATE, # "entity data state" + "consume a character reference"
+  state_set => {entity_add => -1, prev_state => DATA_STATE},
+};
+$Action->[DATA_STATE]->[0x003C] = {
+  name => 'data <',
+  state => TAG_OPEN_STATE,
+};
+$Action->[DATA_STATE]->[KEY_EOF_CHAR] = {
+  name => 'data eof',
+  emit => END_OF_FILE_TOKEN,
+  reconsume => 1,
+};
+$Action->[DATA_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'data else',
+  emit => CHARACTER_TOKEN,
+  emit_data_read_until => q{<&},
+};
+  $XMLAction->[DATA_STATE]->[0x005D] = { # ]
+    name => 'data ]',
+    state => DATA_MSE1_STATE,
+    emit => CHARACTER_TOKEN,
+  };
+  $XMLAction->[DATA_STATE]->[KEY_ELSE_CHAR] = {
+    name => 'data else xml',
+    emit => CHARACTER_TOKEN,
+    emit_data_read_until => q{<&\]},
+  };
+$Action->[RCDATA_STATE]->[0x0026] = {
+  name => 'rcdata &',
+  state => ENTITY_STATE, # "entity data state" + "consume a character reference"
+  state_set => {entity_add => -1, prev_state => RCDATA_STATE},
+};
+$Action->[RCDATA_STATE]->[0x003C] = {
+  name => 'rcdata <',
+  state => RCDATA_LT_STATE,
+};
+$Action->[RCDATA_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[RCDATA_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'rcdata else',
+  emit => CHARACTER_TOKEN,
+  emit_data_read_until => q{<&},
+};
+$Action->[RAWTEXT_STATE]->[0x003C] = {
+  name => 'rawtext <',
+  state => RAWTEXT_LT_STATE,
+};
+$Action->[RAWTEXT_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[RAWTEXT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'rawtext else',
+  emit => CHARACTER_TOKEN,
+  emit_data_read_until => q{<},
+};
+$Action->[SCRIPT_DATA_STATE]->[0x003C] = {
+  name => 'script data <',
+  state => SCRIPT_DATA_LT_STATE,
+};
+$Action->[SCRIPT_DATA_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[SCRIPT_DATA_STATE]->[KEY_ELSE_CHAR] = $Action->[RAWTEXT_STATE]->[KEY_ELSE_CHAR];
+$Action->[PLAINTEXT_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[PLAINTEXT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'plaintext else',
+  emit => CHARACTER_TOKEN,
+  emit_data_read_until => q{},
+};
+# "Tag open state" is known as "tag state" in XML5.
+$Action->[TAG_OPEN_STATE]->[0x0021] = {
+  name => 'tag open !',
+  state => MARKUP_DECLARATION_OPEN_STATE,
+};
+$Action->[TAG_OPEN_STATE]->[0x002F] = {
+  name => 'tag open /',
+  state => CLOSE_TAG_OPEN_STATE,
+};
+$Action->[TAG_OPEN_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'tag open uc',
+  ct => {
+    type => START_TAG_TOKEN,
+    delta => 1,
+    append_tag_name => 0x0020, # UC -> lc
+  },
+  state => TAG_NAME_STATE,
+};
+  $XMLAction->[TAG_OPEN_STATE]->[KEY_ULATIN_CHAR] = {
+    name => 'tag open uc xml',
+    ct => {
+      type => START_TAG_TOKEN,
+      delta => 1,
+      append_tag_name => 0x0000,
+    },
+    state => TAG_NAME_STATE,
+  };
+$Action->[TAG_OPEN_STATE]->[KEY_LLATIN_CHAR] = {
+  name => 'tag open lc',
+  ct => {
+    type => START_TAG_TOKEN,
+    delta => 1,
+    append_tag_name => 0x0000,
+  },
+  state => TAG_NAME_STATE,
+};
+$Action->[TAG_OPEN_STATE]->[0x003F] = {
+  name => 'tag open ?',
+  state => BOGUS_COMMENT_STATE,
+  error => 'pio',
+  error_delta => 1,
+  ct => {
+    type => COMMENT_TOKEN,
+  },
+  reconsume => 1, ## $self->{nc} is intentionally left as is
+};
+  $XMLAction->[TAG_OPEN_STATE]->[0x003F] = { # ?
+    name => 'tag open ? xml',
+    state => PI_STATE,
+  };
+$Action->[TAG_OPEN_STATE]->[KEY_SPACE_CHAR] =
+$Action->[TAG_OPEN_STATE]->[0x003E] = { # >
+  name => 'tag open else',
+  error => 'bare stago',
+  error_delta => 1,
+  state => DATA_STATE,
+  reconsume => 1,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+  emit_delta => 1,
+};
+$Action->[TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = $Action->[TAG_OPEN_STATE]->[0x003E];
+  ## XML5: "<:" has a parse error.
+  $XMLAction->[TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = {
+    name => 'tag open else xml',
+    ct => {
+      type => START_TAG_TOKEN,
+      delta => 1,
+      append_tag_name => 0x0000,
+    },
+    state => TAG_NAME_STATE,
+  };
+$Action->[RCDATA_LT_STATE]->[0x002F] = {
+  name => 'rcdata lt /',
+  state => RCDATA_END_TAG_OPEN_STATE,
+  buffer => {clear => 1},
+};
+$Action->[RAWTEXT_LT_STATE]->[0x002F] = {
+  name => 'rawtext lt /',
+  state => RAWTEXT_END_TAG_OPEN_STATE,
+  buffer => {clear => 1},
+};
+$Action->[SCRIPT_DATA_LT_STATE]->[0x002F] = {
+  name => 'script data lt /',
+  state => SCRIPT_DATA_END_TAG_OPEN_STATE,
+  buffer => {clear => 1},
+};
+$Action->[SCRIPT_DATA_ESCAPED_LT_STATE]->[0x002F] = {
+  name => 'script data escaped lt /',
+  state => SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE,
+  buffer => {clear => 1},
+};
+$Action->[SCRIPT_DATA_LT_STATE]->[0x0021] = {
+  name => 'script data lt !',
+  state => SCRIPT_DATA_ESCAPE_START_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<!',
+};
+$Action->[SCRIPT_DATA_ESCAPED_LT_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'script data escaped lt uc',
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+  emit_data_append => 1,
+  buffer => {clear => 1, append => 0x0020}, # UC -> lc
+  state => SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE,
+};
+$Action->[SCRIPT_DATA_ESCAPED_LT_STATE]->[KEY_LLATIN_CHAR] = {
+  name => 'script data escaped lt lc',
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+  emit_data_append => 1,
+  buffer => {clear => 1, append => 0x0000},
+  state => SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE,
+};
+$Action->[RCDATA_LT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'rcdata lt else',
+  state => RCDATA_STATE,
+  reconsume => 1,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+$Action->[RAWTEXT_LT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'rawtext lt else',
+  state => RAWTEXT_STATE,
+  reconsume => 1,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+$Action->[SCRIPT_DATA_LT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data lt else',
+  state => SCRIPT_DATA_STATE,
+  reconsume => 1,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+$Action->[SCRIPT_DATA_ESCAPED_LT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data escaped lt else',
+  state => SCRIPT_DATA_ESCAPED_STATE,
+  reconsume => 1,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+## XXX "End tag token" in latest HTML5 and in XML5.
+$Action->[CLOSE_TAG_OPEN_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'end tag open uc',
+  ct => {
+    type => END_TAG_TOKEN,
+    delta => 2,
+    append_tag_name => 0x0020, # UC -> lc
+  },
+  state => TAG_NAME_STATE,
+};
+  $XMLAction->[CLOSE_TAG_OPEN_STATE]->[KEY_ULATIN_CHAR] = {
+    name => 'end tag open uc xml',
+    ct => {
+      type => END_TAG_TOKEN,
+      delta => 2,
+      append_tag_name => 0x0000,
+    },
+    state => TAG_NAME_STATE,
+  };
+$Action->[CLOSE_TAG_OPEN_STATE]->[KEY_LLATIN_CHAR] = {
+  name => 'end tag open lc',
+  ct => {
+    type => END_TAG_TOKEN,
+    delta => 2,
+    append_tag_name => 0x0000,
+  },
+  state => TAG_NAME_STATE,
+};
+$Action->[CLOSE_TAG_OPEN_STATE]->[0x003E] = {
+  name => 'end tag open >',
+  error => 'empty end tag',
+  error_delta => 2, # "<" in "</>"
+  state => DATA_STATE,
+};
+  ## XML5: No parse error.
+  
+  ## NOTE: This parser raises a parse error, since it supports XML1,
+  ## not XML5.
+  
+  ## NOTE: A short end tag token.
+  
+  $XMLAction->[CLOSE_TAG_OPEN_STATE]->[0x003E] = {
+    name => 'end tag open > xml',
+    error => 'empty end tag',
+    error_delta => 2, # "<" in "</>"
+    state => DATA_STATE,
+    ct => {
+      type => END_TAG_TOKEN,
+      delta => 2,
+    },
+    emit => '',
+  };
+$Action->[CLOSE_TAG_OPEN_STATE]->[KEY_EOF_CHAR] = {
+  name => 'end tag open eof',
+  error => 'bare etago',
+  state => DATA_STATE,
+  reconsume => 1,
+  emit => CHARACTER_TOKEN,
+  emit_data => '</',
+  emit_delta => 2,
+};
+$Action->[CLOSE_TAG_OPEN_STATE]->[KEY_SPACE_CHAR] = 
+$Action->[CLOSE_TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'end tag open else',
+  error => 'bogus end tag',
+  error_delta => 2, # "<" of "</"
+  state => BOGUS_COMMENT_STATE,
+  ct => {
+    type => COMMENT_TOKEN,
+    delta => 2, # "<" of "</"
+  },
+  reconsume => 1,
+  ## NOTE: $self->{nc} is intentionally left as is.  Although the
+  ## "anything else" case of the spec not explicitly states that the
+  ## next input character is to be reconsumed, it will be included to
+  ## the |data| of the comment token generated from the bogus end tag,
+  ## as defined in the "bogus comment state" entry.
+};
+  ## XML5: "</:" is a parse error.
+  $XMLAction->[CLOSE_TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = {
+    name => 'end tag open else xml',
+    ct => {
+      type => END_TAG_TOKEN,
+      delta => 2,
+      append_tag_name => 0x0000,
+    },
+    state => TAG_NAME_STATE, ## XML5: "end tag name state".
+  };
+      ## This switch-case implements "tag name state", "RCDATA end tag
+      ## name state", "RAWTEXT end tag name state", and "script data
+      ## end tag name state" jointly with the implementation of
+      ## "RCDATA end tag open state" and so on.
+$Action->[TAG_NAME_STATE]->[KEY_SPACE_CHAR] = {
+  name => 'tag name sp',
+  state => BEFORE_ATTRIBUTE_NAME_STATE,
+};
+$Action->[TAG_NAME_STATE]->[0x003E] = {
+  name => 'tag name >',
+  state => DATA_STATE,
+  emit => '',
+};
+$Action->[TAG_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'tag name uc',
+  ct => {
+    append_tag_name => 0x0020, # UC -> lc
+  },
+};
+$XMLAction->[TAG_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'tag name uc xml',
+  ct => {
+    append_tag_name => 0x0000,
+  },
+};
+$Action->[TAG_NAME_STATE]->[KEY_EOF_CHAR] = {
+  name => 'tag name eof',
+  error => 'unclosed tag',
+  state => DATA_STATE,
+  reconsume => 1,
+};
+$Action->[TAG_NAME_STATE]->[0x002F] = {
+  name => 'tag name /',
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$Action->[TAG_NAME_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'tag name else',
+  ct => {
+    append_tag_name => 0x0000,
+  },
+};
+$Action->[SCRIPT_DATA_ESCAPE_START_STATE]->[0x002D] = {
+  name => 'script data escape start -',
+  state => SCRIPT_DATA_ESCAPE_START_DASH_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_ESCAPE_START_DASH_STATE]->[0x002D] = {
+  name => 'script data escape start dash -',
+  state => SCRIPT_DATA_ESCAPED_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_ESCAPE_START_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data escape start else',
+  state => SCRIPT_DATA_STATE,
+  reconsume => 1,
+};
+$Action->[SCRIPT_DATA_ESCAPE_START_DASH_STATE]->[KEY_ELSE_CHAR] = $Action->[SCRIPT_DATA_ESCAPE_START_STATE]->[KEY_ELSE_CHAR];
+$Action->[SCRIPT_DATA_ESCAPED_STATE]->[0x002D] = {
+  name => 'script data escaped -',
+  state => SCRIPT_DATA_ESCAPED_DASH_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_STATE]->[0x002D] = {
+  name => 'script data escaped dash -',
+  state => SCRIPT_DATA_ESCAPED_DASH_DASH_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[0x002D] = {
+  name => 'script data escaped dash dash -',
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_STATE]->[0x002D] = {
+  name => 'script data double escaped -',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE]->[0x002D] = {
+  name => 'script data double escaped -',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[0x002D] = {
+  name => 'script data double escaped dash dash -',
+  emit => CHARACTER_TOKEN,
+  emit_data => '-',
+};
+$Action->[SCRIPT_DATA_ESCAPED_STATE]->[0x003C] = {
+  name => 'script data escaped <',
+  state => SCRIPT_DATA_ESCAPED_LT_STATE,
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_STATE]->[0x003C] = {
+  name => 'script data escaped dash <',
+  state => SCRIPT_DATA_ESCAPED_LT_STATE,
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[0x003C] = {
+  name => 'script data escaped dash dash <',
+  state => SCRIPT_DATA_ESCAPED_LT_STATE,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_STATE]->[0x003C] = {
+  name => 'script data double escaped <',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_LT_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE]->[0x003C] = {
+  name => 'script data double escaped dash <',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_LT_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[0x003C] = {
+  name => 'script data double escaped dash dash <',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_LT_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '<',
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[0x003E] = {
+  name => 'script data escaped dash dash >',
+  state => SCRIPT_DATA_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '>',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[0x003E] = $Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[0x003E];
+$Action->[SCRIPT_DATA_ESCAPED_STATE]->[KEY_EOF_CHAR] =
+$Action->[SCRIPT_DATA_ESCAPED_DASH_STATE]->[KEY_EOF_CHAR] =
+$Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[KEY_EOF_CHAR] = 
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_STATE]->[KEY_EOF_CHAR] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE]->[KEY_EOF_CHAR] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[KEY_EOF_CHAR] = {
+  name => 'script data escaped eof',
+  error => 'eof in escaped script data', # XXXdocumentation
+  state => DATA_STATE,
+  reconsume => 1,
+};
+$Action->[SCRIPT_DATA_ESCAPED_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data escaped else',
+  emit => CHARACTER_TOKEN,
+  state => SCRIPT_DATA_ESCAPED_STATE,
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data escaped dash else',
+  emit => CHARACTER_TOKEN,
+  state => SCRIPT_DATA_ESCAPED_STATE,
+};
+$Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data escaped dash dash else',
+  emit => CHARACTER_TOKEN,
+  state => SCRIPT_DATA_ESCAPED_STATE,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data double escaped else',
+  emit => CHARACTER_TOKEN,
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_STATE,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data double escaped dash else',
+  emit => CHARACTER_TOKEN,
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_STATE,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data double escaped dash dash else',
+  emit => CHARACTER_TOKEN,
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_STATE,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE]->[KEY_SPACE_CHAR] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE]->[KEY_SPACE_CHAR] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE]->[0x003E] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE]->[0x003E] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE]->[0x002F] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE]->[0x002F] = {
+  name => 'script data double escape start sp>/',
+  skip => 1,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE]->[KEY_ULATIN_CHAR] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'script data double escape start uc',
+  emit => CHARACTER_TOKEN,
+  buffer => {append => 0x0020}, # UC -> lc
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE]->[KEY_LLATIN_CHAR] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE]->[KEY_LLATIN_CHAR] = {
+  name => 'script data double escape start lc',
+  emit => CHARACTER_TOKEN,
+  buffer => {append => 0x0000},
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data double escape start else',
+  state => SCRIPT_DATA_ESCAPED_STATE,
+  reconsume => 1,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data double escape end else',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_STATE,
+  reconsume => 1,
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_LT_STATE]->[0x002F] = {
+  name => 'script data double escaped lt /',
+  buffer => {clear => 1},
+  state => SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '/',
+};
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_LT_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'script data double escaped lt else',
+  state => SCRIPT_DATA_DOUBLE_ESCAPED_STATE,
+  reconsume => 1,
+};
+      ## XML5: Part of the "data state".
+$Action->[DATA_MSE1_STATE]->[0x005D] = {
+  name => 'data mse1 ]',
+  state => DATA_MSE2_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => ']',
+};
+$Action->[DATA_MSE1_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'data mse1 else',
+  state => DATA_STATE,
+  reconsume => 1,
+};
+$Action->[DATA_MSE2_STATE]->[0x003E] = {
+  name => 'data mse2 >',
+  error => 'unmatched mse', # XML5: Not a parse error. # XXXdocumentation
+  error_delta => 2,
+  state => DATA_STATE,
+  emit => CHARACTER_TOKEN,
+  emit_data => '>',
+};
+$Action->[DATA_MSE2_STATE]->[0x005D] = {
+  name => 'data mse2 ]',
+  emit => CHARACTER_TOKEN,
+  emit_data => ']',
+};
+$Action->[DATA_MSE2_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'data mse2 else',
+  state => DATA_STATE,
+  reconsume => 1,
+};
+      ## XML5: "Tag attribute name before state".
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[KEY_SPACE_CHAR] = {
+  name => 'before attr name sp',
+};
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x003E] = {
+  name => 'before attr name >',
+  emit => '',
+  state => DATA_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'before attr name uc',
+  ca => {
+    set_name => 0x0020, # UC -> lc
+  },
+  state => ATTRIBUTE_NAME_STATE,
+};
+$XMLAction->[BEFORE_ATTRIBUTE_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'before attr name uc xml',
+  ca => {
+    set_name => 0x0000,
+  },
+  state => ATTRIBUTE_NAME_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x002F] = {
+  name => 'before attr name /',
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[KEY_EOF_CHAR] = {
+  name => 'before attr name eof',
+  error => 'unclosed tag',
+  state => DATA_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x0022] = 
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x0027] = 
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x003C] = 
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x003D] = {
+  name => q[before attr name "'<=],
+  error => 'bad attribute name', ## XML5: Not a parse error.
+  ca => {set_name => 0x0000},
+  state => ATTRIBUTE_NAME_STATE,
+};
+          ## XML5: ":" raises a parse error and is ignored.
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'before attr name else',
+  ca => {set_name => 0x0000},
+  state => ATTRIBUTE_NAME_STATE,
+};
+
+      ## XML5: "Tag attribute name state".
+$Action->[ATTRIBUTE_NAME_STATE]->[KEY_SPACE_CHAR] = {
+  name => 'attr name sp',
+  ca => {leave => 1},
+  state => AFTER_ATTRIBUTE_NAME_STATE,
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[0x003D] = {
+  name => 'attr name =',
+  ca => {leave => 1},
+  state => BEFORE_ATTRIBUTE_VALUE_STATE,
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[0x003E] = {
+  name => 'attr name >',
+  ca => {leave => 1},
+  emit => '',
+  state => DATA_STATE,
+};
+$XMLAction->[ATTRIBUTE_NAME_STATE]->[0x003E] = {
+  name => 'attr name > xml',
+  error => 'no attr value', ## XML5: Not a parse error. # XXXdocumentation
+  ca => {leave => 1},
+  emit => '',
+  state => DATA_STATE,
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'attr name uc',
+  ca => {name => 0x0020}, # UC -> lc
+};
+$XMLAction->[ATTRIBUTE_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'attr name uc',
+  ca => {name => 0x0000},
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[0x002F] = {
+  name => 'attr name /',
+  ca => {leave => 1},
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$XMLAction->[ATTRIBUTE_NAME_STATE]->[0x002F] = {
+  name => 'attr name / xml',
+  error => 'no attr value', ## XML5: Not a parse error. # XXXdocumentation
+  ca => {leave => 1},
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[KEY_EOF_CHAR] = {
+  name => 'attr name eof',
+  error => 'unclosed tag',
+  ca => {leave => 1},
+  state => DATA_STATE,
+  reconsume => 1,
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[0x0022] =
+$Action->[ATTRIBUTE_NAME_STATE]->[0x0027] =
+$Action->[ATTRIBUTE_NAME_STATE]->[0x003C] = {
+  name => q[attr name "'<],
+  error => 'bad attribute name', ## XML5: Not a parse error.
+  ca => {name => 0x0000},
+};
+$Action->[ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'attr name else',
+  ca => {name => 0x0000},
+};
+      ## XML5: "Tag attribute name after state".
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_SPACE_CHAR] = {
+  name => 'after attr name sp',
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x003D] = {
+  name => 'after attr name =',
+  state => BEFORE_ATTRIBUTE_VALUE_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x003E] = {
+  name => 'after attr name >',
+  emit => '',
+  state => DATA_STATE,
+};
+$XMLAction->[AFTER_ATTRIBUTE_NAME_STATE]->[0x003E] = {
+  name => 'after attr name > xml',
+  error => 'no attr value', ## XML5: Not a parse error. # XXXdocumentation
+  emit => '',
+  state => DATA_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'after attr name uc',
+  ca => {set_name => 0x0020}, # UC -> lc
+  state => ATTRIBUTE_NAME_STATE,
+};
+$XMLAction->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_ULATIN_CHAR] = {
+  name => 'after attr name uc xml',
+  ca => {set_name => 0x0000},
+  state => ATTRIBUTE_NAME_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x002F] = {
+  name => 'after attr name /',
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$XMLAction->[AFTER_ATTRIBUTE_NAME_STATE]->[0x002F] = {
+  name => 'after attr name / xml',
+  error => 'no attr value', ## XML5: Not a parse error. # XXXdocumentation
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_EOF_CHAR] = {
+  name => 'after attr name eof',
+  error => 'unclosed tag',
+  state => DATA_STATE,
+  reconsume => 1,
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x0022] =
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x0027] =
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x003C] = {
+  name => q[after attr name "'<],
+  error => 'bad attribute name', ## XML5: Not a parse error.
+  #error2(xml) => 'no attr value', ## XML5: Not a parse error.
+  ca => {set_name => 0x0000},
+  state => ATTRIBUTE_NAME_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
+  name => q[after attr name else],
+  ca => {set_name => 0x0000},
+  state => ATTRIBUTE_NAME_STATE,
+};
+$XMLAction->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
+  name => q[after attr name else],
+  error => 'no attr value', ## XML5: Not a parse error.
+  ca => {set_name => 0x0000},
+  state => ATTRIBUTE_NAME_STATE,
+};
+      ## XML5: "Tag attribute value before state".
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[KEY_SPACE_CHAR] = {
+  name => 'before attr value sp',
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x0022] = {
+  name => 'before attr value "',
+  state => ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x0026] = {
+  name => 'before attr value &',
+  state => ATTRIBUTE_VALUE_UNQUOTED_STATE,
+  reconsume => 1,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x0027] = {
+  name => "before attr value '",
+  state => ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x003E] = {
+  name => 'before attr value >',
+  error => 'empty unquoted attribute value',
+  emit => '',
+  state => DATA_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[KEY_EOF_CHAR] = {
+  name => 'before attr value eof',
+  error => 'unclosed tag',
+  state => DATA_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x003C] =
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x003D] =
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x0060] = {
+  name => 'before attr value <=`',
+  error => 'bad attribute value', ## XML5: Not a parse error.
+  ca => {value => 1},
+  state => ATTRIBUTE_VALUE_UNQUOTED_STATE,
+};
+$XMLAction->[BEFORE_ATTRIBUTE_VALUE_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'before attr value else xml',
+  error => 'unquoted attr value', ## XML5: Not a parse error. # XXXdocumentation
+  ca => {value => 1},
+  state => ATTRIBUTE_VALUE_UNQUOTED_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'before attr value else',
+  ca => {value => 1},
+  state => ATTRIBUTE_VALUE_UNQUOTED_STATE,
+};
+
+$Action->[AFTER_ATTRIBUTE_VALUE_QUOTED_STATE]->[KEY_SPACE_CHAR] = {
+  name => 'after attr value quoted sp',
+  state => BEFORE_ATTRIBUTE_NAME_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_VALUE_QUOTED_STATE]->[0x003E] = {
+  name => 'after attr value quoted >',
+  emit => '',
+  state => DATA_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_VALUE_QUOTED_STATE]->[0x002F] = {
+  name => 'after attr value quoted /',
+  state => SELF_CLOSING_START_TAG_STATE,
+};
+$Action->[AFTER_ATTRIBUTE_VALUE_QUOTED_STATE]->[KEY_EOF_CHAR] = {
+  name => 'after attr value quoted eof',
+  error => 'unclosed tag',
+  state => DATA_STATE,
+  reconsume => 1,
+};
+$Action->[AFTER_ATTRIBUTE_VALUE_QUOTED_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'after attr value quoted else',
+  error => 'no space between attributes',
+  state => BEFORE_ATTRIBUTE_NAME_STATE,
+  reconsume => 1,
+};
+$Action->[SELF_CLOSING_START_TAG_STATE]->[0x003E] = {
+  name => 'self closing start tag >',
+  skip => 1,
+};
+$Action->[SELF_CLOSING_START_TAG_STATE]->[KEY_EOF_CHAR] = {
+  name => 'self closing start tag eof',
+  error => 'unclosed tag',
+  state => DATA_STATE, ## XML5: "Tag attribute name before state".
+  reconsume => 1,
+};
+$Action->[SELF_CLOSING_START_TAG_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'self closing start tag else',
+  error => 'nestc', # XXX This error type is wrong.
+  state => BEFORE_ATTRIBUTE_NAME_STATE,
+  reconsume => 1,
+};
+$Action->[MD_HYPHEN_STATE]->[0x002D] = {
+  name => 'md hyphen -',
+  ct => {type => COMMENT_TOKEN, data => '', delta => 3},
+  state => COMMENT_START_STATE, ## XML5: "comment state".
+};
+$Action->[MD_HYPHEN_STATE]->[KEY_ELSE_CHAR] = {
+  name => 'md hyphen else',
+  error => 'bogus comment',
+  error_delta => 3,
+  state => BOGUS_COMMENT_STATE,
+  reconsume => 1,
+  ct => {type => COMMENT_TOKEN, data => '-', delta => 3},
+};
+
+my $c_to_key = [];
+$c_to_key->[255] = KEY_EOF_CHAR; # EOF_CHAR
+$c_to_key->[$_] = $_ for 0x0000..0x007F;
+$c_to_key->[$_] = KEY_SPACE_CHAR for keys %$is_space;
+$c_to_key->[$_] = KEY_ULATIN_CHAR for 0x0041..0x005A;
+$c_to_key->[$_] = KEY_LLATIN_CHAR for 0x0061..0x007A;
+
 sub _get_next_token ($) {
   my $self = shift;
 
   if ($self->{self_closing}) {
+    ## NOTE: The |$self->{self_closing}| flag can never be set to
+    ## tokens except for start tag tokens.  A start tag token is
+    ## always set to |$self->{ct}| before it is emitted.
     $self->{parse_error}->(level => $self->{level}->{must}, type => 'nestc', token => $self->{ct});
-    ## NOTE: The |self_closing| flag is only set by start tag token.
-    ## In addition, when a start tag token is emitted, it is always set to
-    ## |ct|.
     delete $self->{self_closing};
   }
 
@@ -351,428 +1220,169 @@ sub _get_next_token ($) {
   }
 
   A: {
-    if ($self->{state} == PCDATA_STATE) {
-      ## NOTE: Same as |DATA_STATE|, but only for |PCDATA| content model.
+    my $nc = $self->{nc};
+    my $state = $self->{state};
 
-      if ($self->{nc} == 0x0026) { # &
-        
-        ## NOTE: In the spec, the tokenizer is switched to the 
-        ## "entity data state".  In this implementation, the tokenizer
-        ## is switched to the |ENTITY_STATE|, which is an implementation
-        ## of the "consume a character reference" algorithm.
-        $self->{entity_add} = -1;
-        $self->{prev_state} = DATA_STATE;
-        $self->{state} = ENTITY_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
+    
+
+    my $c = $nc > 0x007F ? KEY_ELSE_CHAR : $c_to_key->[$nc];
+    my $action = $Action->[$state]->[$c] || $Action->[$state]->[KEY_ELSE_CHAR];
+    if ($self->{is_xml}) {
+      $action = $XMLAction->[$state]->[$c]
+          || $Action->[$state]->[$c]
+          || $XMLAction->[$state]->[KEY_ELSE_CHAR]
+          || $Action->[$state]->[KEY_ELSE_CHAR];
     }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003C) { # <
-        
-        $self->{state} = TAG_OPEN_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        
-        return  ({type => END_OF_FILE_TOKEN,
-                  line => $self->{line}, column => $self->{column}});
-        last A; ## TODO: ok?
-      } else {
-        
-        #
-      }
 
-      # Anything else
-      my $token = {type => CHARACTER_TOKEN,
-                   data => chr $self->{nc},
-                   line => $self->{line}, column => $self->{column},
-                  };
-      $self->{read_until}->($token->{data}, q[<&], length $token->{data});
-
-      ## Stay in the state.
+    if ($action and not $action->{skip}) {
       
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-      return  ($token);
-      redo A;
-    } elsif ($self->{state} == DATA_STATE) {
-      $self->{s_kwd} = '' unless defined $self->{s_kwd};
-      if ($self->{nc} == 0x0026) { # &
-        $self->{s_kwd} = '';
-	if ($self->{content_model} & CM_ENTITY and # PCDATA | RCDATA
-            not $self->{escape}) {
-          
-          ## NOTE: In the spec, the tokenizer is switched to the 
-          ## "entity data state".  In this implementation, the tokenizer
-          ## is switched to the |ENTITY_STATE|, which is an implementation
-          ## of the "consume a character reference" algorithm.
-          $self->{entity_add} = -1;
-          $self->{prev_state} = DATA_STATE;
-          $self->{state} = ENTITY_STATE;
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          redo A;
-        } else {
-          
-          #
-        }
-      } elsif ($self->{nc} == 0x002D) { # -
-	if ($self->{content_model} & CM_LIMITED_MARKUP) { # RCDATA | CDATA
-          if ($self->{s_kwd} eq '<!-') {
-            
-            $self->{escape} = 1; # unless $self->{escape};
-            $self->{s_kwd} = '--';
-            #
-          } elsif ($self->{s_kwd} eq '-') {
-            
-            $self->{s_kwd} = '--';
-            #
-          } elsif ($self->{s_kwd} eq '<!' or $self->{s_kwd} eq '-') {
-            
-            $self->{s_kwd} .= '-';
-            #
-          } else {
-            
-            $self->{s_kwd} = '-';
-            #
-          }
-        }
-        
-        #
-      } elsif ($self->{nc} == 0x0021) { # !
-        if (length $self->{s_kwd}) {
-          
-          $self->{s_kwd} .= '!';
-          #
-        } else {
-          
-          #$self->{s_kwd} = '';
-          #
-        }
-        #
-      } elsif ($self->{nc} == 0x003C) { # <
-        if ($self->{content_model} & CM_FULL_MARKUP or # PCDATA
-            (($self->{content_model} & CM_LIMITED_MARKUP) and # CDATA | RCDATA
-             not $self->{escape})) {
-          
-          $self->{state} = TAG_OPEN_STATE;
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          redo A;
-        } else {
-          
-          $self->{s_kwd} = '';
-          #
-        }
-      } elsif ($self->{nc} == 0x003E) { # >
-        if ($self->{escape} and
-            ($self->{content_model} & CM_LIMITED_MARKUP)) { # RCDATA | CDATA
-          if ($self->{s_kwd} eq '--') {
-            
-            delete $self->{escape};
-            #
-          } else {
-            
-            #
-          }
-        } elsif ($self->{is_xml} and $self->{s_kwd} eq ']]') {
-          
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'unmatched mse', ## TODO: type
+
+      if (defined $action->{error}) {
+        if ($action->{error_delta}) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => $action->{error},
                           line => $self->{line_prev},
-                          column => $self->{column_prev} - 1);
-          #
+                          column => $self->{column_prev} - $action->{error_delta} + 1);
         } else {
-          
-          #
+          $self->{parse_error}->(level => $self->{level}->{must}, type => $action->{error});
         }
-        
-        $self->{s_kwd} = '';
-        #
-      } elsif ($self->{nc} == 0x005D) { # ]
-        if ($self->{s_kwd} eq ']' or $self->{s_kwd} eq '') {
-          
-          $self->{s_kwd} .= ']';
-        } elsif ($self->{s_kwd} eq ']]') {
-          
-          #
-        } else {
-          
-          $self->{s_kwd} = '';
-        }
-        #
-      } elsif ($self->{nc} == -1) {
-        
-        $self->{s_kwd} = '';
-        return  ({type => END_OF_FILE_TOKEN,
-                  line => $self->{line}, column => $self->{column}});
-        last A; ## TODO: ok?
-      } else {
-        
-        $self->{s_kwd} = '';
-        #
       }
 
-      # Anything else
-      my $token = {type => CHARACTER_TOKEN,
-                   data => chr $self->{nc},
-                   line => $self->{line}, column => $self->{column},
-                  };
-      if ($self->{read_until}->($token->{data}, q{-!<>&\]},
-                                length $token->{data})) {
-        $self->{s_kwd} = '';
+      if (defined $action->{state}) {
+        $self->{state} = $action->{state};
+        
+        if ($action->{state_set}) {
+          for (keys %{$action->{state_set}}) {
+            $self->{$_} = $action->{state_set}->{$_};
+          }
+        }
       }
 
-      ## Stay in the data state.
-      if (not $self->{is_xml} and
-          $self->{content_model} == PCDATA_CONTENT_MODEL) {
+      if (my $act = $action->{ct}) {
+        if (defined $act->{type}) {
+          $self->{ct} = {type => $act->{type},
+                         tag_name => '', data => $act->{data}};
+          if ($act->{delta}) {
+            $self->{ct}->{line} = $self->{line_prev};
+            $self->{ct}->{column} = $self->{column_prev} - $act->{delta} + 1;
+          } else {
+            $self->{ct}->{line} = $self->{line};
+            $self->{ct}->{column} = $self->{column};
+          }
+        }
         
-        $self->{state} = PCDATA_STATE;
-      } else {
-        
-        ## Stay in the state.
+        if (defined $act->{append_tag_name}) {
+          $self->{ct}->{tag_name} .= chr ($nc + $act->{append_tag_name});
+        }
       }
       
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-      return  ($token);
-      redo A;
-    } elsif ($self->{state} == TAG_OPEN_STATE) {
-      ## XML5: "tag state".
-
-      if ($self->{content_model} & CM_LIMITED_MARKUP) { # RCDATA | CDATA
-        if ($self->{nc} == 0x002F) { # /
-          
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          $self->{state} = CLOSE_TAG_OPEN_STATE;
-          redo A;
-        } elsif ($self->{nc} == 0x0021) { # !
-          
-          $self->{s_kwd} = $self->{escaped} ? '' : '<';
-          #
-        } else {
-          
-          $self->{s_kwd} = '';
-          #
-        }
-
-        ## reconsume
-        $self->{state} = DATA_STATE;
-        return  ({type => CHARACTER_TOKEN, data => '<',
-                  line => $self->{line_prev},
-                  column => $self->{column_prev},
-                 });
-        redo A;
-      } elsif ($self->{content_model} & CM_FULL_MARKUP) { # PCDATA
-        if ($self->{nc} == 0x0021) { # !
-          
-          $self->{state} = MARKUP_DECLARATION_OPEN_STATE;
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          redo A;
-        } elsif ($self->{nc} == 0x002F) { # /
-          
-          $self->{state} = CLOSE_TAG_OPEN_STATE;
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          redo A;
-        } elsif (0x0041 <= $self->{nc} and
-                 $self->{nc} <= 0x005A) { # A..Z
-          
-          $self->{ct}
-            = {type => START_TAG_TOKEN,
-               tag_name => chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020)),
-               line => $self->{line_prev},
-               column => $self->{column_prev}};
-          $self->{state} = TAG_NAME_STATE;
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          redo A;
-        } elsif (0x0061 <= $self->{nc} and
-                 $self->{nc} <= 0x007A) { # a..z
-          
-          $self->{ct} = {type => START_TAG_TOKEN,
-                                    tag_name => chr ($self->{nc}),
-                                    line => $self->{line_prev},
-                                    column => $self->{column_prev}};
-          $self->{state} = TAG_NAME_STATE;
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          redo A;
-        } elsif ($self->{nc} == 0x003E) { # >
-          
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty start tag',
-                          line => $self->{line_prev},
-                          column => $self->{column_prev});
-          $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-
-          return  ({type => CHARACTER_TOKEN, data => '<>',
-                    line => $self->{line_prev},
-                    column => $self->{column_prev},
-                   });
-
-          redo A;
-        } elsif ($self->{nc} == 0x003F) { # ?
-          if ($self->{is_xml}) {
+      if (my $aca = $action->{ca}) {
+        if ($aca->{value}) {
+          $self->{ca}->{value} .= chr $nc;
+        } elsif (defined $aca->{name}) {
+          $self->{ca}->{name} .= chr ($nc + $aca->{name});
+        } elsif (defined $aca->{set_name}) {
+          $self->{ca} = {
+            name => chr ($nc + $aca->{set_name}),
+            value => '',
+            line => $self->{line}, column => $self->{column},
+          };
+        } elsif ($aca->{leave}) {
+          if (exists $self->{ct}->{attributes}->{$self->{ca}->{name}}) {
             
-            $self->{state} = PI_STATE;
-            
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-            redo A;
+            $self->{parse_error}->(level => $self->{level}->{must}, type => 'duplicate attribute', text => $self->{ca}->{name}, line => $self->{ca}->{line}, column => $self->{ca}->{column});
+            ## Discard $self->{ca}.
           } else {
             
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'pio',
-                            line => $self->{line_prev},
-                            column => $self->{column_prev});
-            $self->{state} = BOGUS_COMMENT_STATE;
-            $self->{ct} = {type => COMMENT_TOKEN, data => '',
-                           line => $self->{line_prev},
-                           column => $self->{column_prev},
-                          };
-            ## $self->{nc} is intentionally left as is
-            redo A;
+            $self->{ct}->{attributes}->{$self->{ca}->{name}} = $self->{ca};
+            $self->{ca}->{index} = ++$self->{ct}->{last_index};
           }
-        } elsif (not $self->{is_xml} or $is_space->{$self->{nc}}) {
+        }
+      }
+
+      if (defined $action->{buffer}) {
+        $self->{kwd} = '' if $action->{buffer}->{clear};
+        $self->{kwd} .= chr ($nc + $action->{buffer}->{append})
+            if defined $action->{buffer}->{append};
+
+        
+      }
+
+      if (defined $action->{emit}) {
+        if ($action->{emit} eq '') {
+          if ($self->{ct}->{type} == START_TAG_TOKEN) {
+            
+            $self->{last_stag_name} = $self->{ct}->{tag_name};
+          } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
+            if ($self->{ct}->{attributes}) {
+              
+              $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
+            } else {
+              
+            }
+          } else {
+            die "$0: $self->{ct}->{type}: Unknown token type";
+          }
           
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'bare stago',
-                          line => $self->{line_prev},
-                          column => $self->{column_prev});
-          $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
-          ## reconsume
-
-          return  ({type => CHARACTER_TOKEN, data => '<',
-                    line => $self->{line_prev},
-                    column => $self->{column_prev},
-                   });
-
-          redo A;
+          if ($action->{reconsume}) {
+            #
+          } else {
+            
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+          }
+          return  ($self->{ct});
         } else {
-          ## XML5: "<:" is a parse error.
+          my $token = {type => $action->{emit}};
+          if (defined $action->{emit_data}) {
+            $token->{data} = $action->{emit_data};
+            if ($action->{emit_data_append}) {
+              $token->{data} .= chr $nc;
+            }
+          } elsif ($action->{emit} == CHARACTER_TOKEN) {
+            $token->{data} .= chr $nc;
+          }
+          if ($action->{emit_delta}) {
+            $token->{line} = $self->{line_prev};
+            $token->{column} = $self->{column_prev} - $action->{emit_delta} + 1;
+          } else {
+            $token->{line} = $self->{line};
+            $token->{column} = $self->{column};
+          }
+          if (defined $action->{emit_data_read_until}) {
+            $self->{read_until}->($token->{data},
+                                  $action->{emit_data_read_until},
+                                  length $token->{data});
+          }
           
-          $self->{ct} = {type => START_TAG_TOKEN,
-                                    tag_name => chr ($self->{nc}),
-                                    line => $self->{line_prev},
-                                    column => $self->{column_prev}};
-          $self->{state} = TAG_NAME_STATE;
+          if ($action->{reconsume}) {
+            #
+          } else {
+            
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+          }
+          return  ($token);
+        }
+      } else {
+        if ($action->{reconsume}) {
+          #
+        } else {
           
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -784,179 +1394,50 @@ sub _get_next_token ($) {
       $self->{set_nc}->($self);
     }
   
-          redo A;
         }
-      } else {
-        die "$0: $self->{content_model} in tag open";
       }
-    } elsif ($self->{state} == CLOSE_TAG_OPEN_STATE) {
-      ## NOTE: The "close tag open state" in the spec is implemented as
-      ## |CLOSE_TAG_OPEN_STATE| and |CDATA_RCDATA_CLOSE_TAG_STATE|.
 
-      ## XML5: "end tag state".
+      redo A;
+    }
+
+    if ({
+      (RCDATA_END_TAG_OPEN_STATE) => 1,
+      (RAWTEXT_END_TAG_OPEN_STATE) => 1,
+      (SCRIPT_DATA_END_TAG_OPEN_STATE) => 1,
+      (SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE) => 1,
+    }->{$state}) {
+      ## This switch-case implements "RCDATA end tag open state",
+      ## "RAWTEXT end tag open state", "script data end tag open
+      ## state", "RCDATA end tag name state", "RAWTEXT end tag name
+      ## state", and "script end tag name state" jointly with the
+      ## implementation of the "tag name" state.
 
       my ($l, $c) = ($self->{line_prev}, $self->{column_prev} - 1); # "<"of"</"
-      if ($self->{content_model} & CM_LIMITED_MARKUP) { # RCDATA | CDATA
-        if (defined $self->{last_stag_name}) {
-          $self->{state} = CDATA_RCDATA_CLOSE_TAG_STATE;
-          $self->{kwd} = '';
-          ## Reconsume.
-          redo A;
-        } else {
-          ## No start tag token has ever been emitted
-          ## NOTE: See <http://krijnhoetmer.nl/irc-logs/whatwg/20070626#l-564>.
-          
-          $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
-          ## Reconsume.
-          return  ({type => CHARACTER_TOKEN, data => '</',
-                    line => $l, column => $c,
-                   });
-          redo A;
-        }
-      }
 
-      if (0x0041 <= $self->{nc} and
-          $self->{nc} <= 0x005A) { # A..Z
-        
-        $self->{ct}
-            = {type => END_TAG_TOKEN,
-               tag_name => chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020)),
-               line => $l, column => $c};
-        $self->{state} = TAG_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif (0x0061 <= $self->{nc} and
-               $self->{nc} <= 0x007A) { # a..z
-        
-        $self->{ct} = {type => END_TAG_TOKEN,
-                                  tag_name => chr ($self->{nc}),
-                                  line => $l, column => $c};
-        $self->{state} = TAG_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty end tag',
-                        line => $self->{line_prev}, ## "<" in "</>"
-                        column => $self->{column_prev} - 1);
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        if ($self->{is_xml}) {
-          
-          ## XML5: No parse error.
-          
-          ## NOTE: This parser raises a parse error, since it supports
-          ## XML1, not XML5.
-
-          ## NOTE: A short end tag token.
-          my $ct = {type => END_TAG_TOKEN,
-                    tag_name => '',
-                    line => $self->{line_prev},
-                    column => $self->{column_prev} - 1,
-                   };
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-          return  ($ct);
-        } else {
-          
-          
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        }
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'bare etago');
-        $self->{s_kwd} = '';
-        $self->{state} = DATA_STATE;
-        # reconsume
-
-        return  ({type => CHARACTER_TOKEN, data => '</',
-                  line => $l, column => $c,
-                 });
-
-        redo A;
-      } elsif (not $self->{is_xml} or
-               $is_space->{$self->{nc}}) {
-        
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'bogus end tag',
-                        line => $self->{line_prev}, # "<" of "</"
-                        column => $self->{column_prev} - 1);
-        $self->{state} = BOGUS_COMMENT_STATE;
-        $self->{ct} = {type => COMMENT_TOKEN, data => '',
-                                  line => $self->{line_prev}, # "<" of "</"
-                                  column => $self->{column_prev} - 1,
-                                 };
-        ## NOTE: $self->{nc} is intentionally left as is.
-        ## Although the "anything else" case of the spec not explicitly
-        ## states that the next input character is to be reconsumed,
-        ## it will be included to the |data| of the comment token
-        ## generated from the bogus end tag, as defined in the
-        ## "bogus comment state" entry.
-        redo A;
+      if (defined $self->{last_stag_name}) {
+        #
       } else {
-        ## XML5: "</:" is a parse error.
+        ## No start tag token has ever been emitted
+        ## NOTE: See <http://krijnhoetmer.nl/irc-logs/whatwg/20070626#l-564>.
         
-        $self->{ct} = {type => END_TAG_TOKEN,
-                       tag_name => chr ($self->{nc}),
-                       line => $l, column => $c};
-        $self->{state} = TAG_NAME_STATE; ## XML5: "end tag name state".
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
+        $self->{state} = {
+          (RCDATA_END_TAG_OPEN_STATE) => RCDATA_STATE,
+          (RAWTEXT_END_TAG_OPEN_STATE) => RAWTEXT_STATE,
+          (SCRIPT_DATA_END_TAG_OPEN_STATE) => SCRIPT_DATA_STATE,
+          (SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE)
+              => SCRIPT_DATA_ESCAPED_STATE,
+        }->{$state} or die "${state}'s next state not found";
+        ## Reconsume.
+        return  ({type => CHARACTER_TOKEN, data => '</',
+                  line => $l, column => $c});
         redo A;
       }
-    } elsif ($self->{state} == CDATA_RCDATA_CLOSE_TAG_STATE) {
+
       my $ch = substr $self->{last_stag_name}, length $self->{kwd}, 1;
       if (length $ch) {
         my $CH = $ch;
         $ch =~ tr/a-z/A-Z/;
-        my $nch = chr $self->{nc};
+        my $nch = chr $nc;
         if ($nch eq $ch or $nch eq $CH) {
           
           ## Stay in the state.
@@ -975,8 +1456,13 @@ sub _get_next_token ($) {
           redo A;
         } else {
           
-          $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
+          $self->{state} = {
+            (RCDATA_END_TAG_OPEN_STATE) => RCDATA_STATE,
+            (RAWTEXT_END_TAG_OPEN_STATE) => RAWTEXT_STATE,
+            (SCRIPT_DATA_END_TAG_OPEN_STATE) => SCRIPT_DATA_STATE,
+            (SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE)
+                => SCRIPT_DATA_ESCAPED_STATE,
+          }->{$state} or die "${state}'s next state not found";
           ## Reconsume.
           return  ({type => CHARACTER_TOKEN,
                     data => '</' . $self->{kwd},
@@ -985,17 +1471,21 @@ sub _get_next_token ($) {
                    });
           redo A;
         }
-      } else { # after "<{tag-name}"
-        unless ($is_space->{$self->{nc}} or
+      } else { # after "</{tag-name}"
+        unless ($is_space->{$nc} or
 	        {
                  0x003E => 1, # >
                  0x002F => 1, # /
-                 -1 => 1, # EOF
-                }->{$self->{nc}}) {
+                }->{$nc}) {
           
           ## Reconsume.
-          $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
+          $self->{state} = {
+            (RCDATA_END_TAG_OPEN_STATE) => RCDATA_STATE,
+            (RAWTEXT_END_TAG_OPEN_STATE) => RAWTEXT_STATE,
+            (SCRIPT_DATA_END_TAG_OPEN_STATE) => SCRIPT_DATA_STATE,
+            (SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE)
+                => SCRIPT_DATA_ESCAPED_STATE,
+          }->{$self->{state}} or die "${state}'s next state not found";
           return  ({type => CHARACTER_TOKEN,
                     data => '</' . $self->{kwd},
                     line => $self->{line_prev},
@@ -1014,40 +1504,23 @@ sub _get_next_token ($) {
           redo A;
         }
       }
-    } elsif ($self->{state} == TAG_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
-        
-        $self->{state} = BEFORE_ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          #if ($self->{ct}->{attributes}) {
-          #  ## NOTE: This should never be reached.
-          #  !!! cp (36);
-          #  !!! parse-error (type => 'end tag attribute');
-          #} else {
-            
-          #}
+    } elsif ($state == SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE or
+             $state == SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE) {
+      if ($is_space->{$nc} or
+          $nc == 0x002F or # /
+          $nc == 0x003E) { # >
+        my $token = {type => CHARACTER_TOKEN,
+                     data => chr $nc,
+                     line => $self->{line}, column => $self->{column}};
+        if ($state == SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE) {
+          $self->{state} = $self->{kwd} eq 'script' # "temporary buffer"
+              ? SCRIPT_DATA_DOUBLE_ESCAPED_STATE
+              : SCRIPT_DATA_ESCAPED_STATE;
         } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
+          $self->{state} = $self->{kwd} eq 'script' # "temporary buffer"
+              ? SCRIPT_DATA_ESCAPED_STATE
+              : SCRIPT_DATA_DOUBLE_ESCAPED_STATE;
         }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -1059,733 +1532,16 @@ sub _get_next_token ($) {
       $self->{set_nc}->($self);
     }
   
-
-        return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif (0x0041 <= $self->{nc} and
-               $self->{nc} <= 0x005A) { # A..Z
-        
-        $self->{ct}->{tag_name}
-            .= chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020));
-          # start tag or end tag
-        ## Stay in this state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          #if ($self->{ct}->{attributes}) {
-          #  ## NOTE: This state should never be reached.
-          #  !!! cp (40);
-          #  !!! parse-error (type => 'end tag attribute');
-          #} else {
-            
-          #}
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        # reconsume
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif ($self->{nc} == 0x002F) { # /
-        
-        $self->{state} = SELF_CLOSING_START_TAG_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
+        return  ($token);
         redo A;
       } else {
-        
-        $self->{ct}->{tag_name} .= chr $self->{nc};
-          # start tag or end tag
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
+        die "$state/$nc is implemented";
       }
-    } elsif ($self->{state} == BEFORE_ATTRIBUTE_NAME_STATE) {
-      ## XML5: "Tag attribute name before state".
-
-      if ($is_space->{$self->{nc}}) {
-        
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-
-        return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif (0x0041 <= $self->{nc} and
-               $self->{nc} <= 0x005A) { # A..Z
-        
-        $self->{ca}
-            = {name => chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020)),
-               value => '',
-               line => $self->{line}, column => $self->{column}};
-        $self->{state} = ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x002F) { # /
-        
-        $self->{state} = SELF_CLOSING_START_TAG_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        # reconsume
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } else {
-        if ({
-             0x0022 => 1, # "
-             0x0027 => 1, # '
-             0x003C => 1, # <
-             0x003D => 1, # =
-            }->{$self->{nc}}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad attribute name');
-        } else {
-          
-          ## XML5: ":" raises a parse error and is ignored.
-        }
-        $self->{ca}
-            = {name => chr ($self->{nc}),
-               value => '',
-               line => $self->{line}, column => $self->{column}};
-        $self->{state} = ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      }
-    } elsif ($self->{state} == ATTRIBUTE_NAME_STATE) {
-      ## XML5: "Tag attribute name state".
-
-      my $before_leave = sub {
-        if (exists $self->{ct}->{attributes} # start tag or end tag
-            ->{$self->{ca}->{name}}) { # MUST
-          
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'duplicate attribute', text => $self->{ca}->{name}, line => $self->{ca}->{line}, column => $self->{ca}->{column});
-          ## Discard $self->{ca} # MUST
-        } else {
-          
-          $self->{ct}->{attributes}->{$self->{ca}->{name}}
-            = $self->{ca};
-          $self->{ca}->{index} = ++$self->{ct}->{last_index};
-        }
-      }; # $before_leave
-
-      if ($is_space->{$self->{nc}}) {
-        
-        $before_leave->();
-        $self->{state} = AFTER_ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003D) { # =
-        
-        $before_leave->();
-        $self->{state} = BEFORE_ATTRIBUTE_VALUE_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        if ($self->{is_xml}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr value'); ## TODO: type
-        } else {
-          
-        }
-
-        $before_leave->();
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-
-        return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif (0x0041 <= $self->{nc} and
-               $self->{nc} <= 0x005A) { # A..Z
-        
-        $self->{ca}->{name}
-            .= chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020));
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x002F) { # /
-        if ($self->{is_xml}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr value'); ## TODO: type
-        } else {
-          
-        }
-        
-        $before_leave->();
-        $self->{state} = SELF_CLOSING_START_TAG_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-        $before_leave->();
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        # reconsume
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } else {
-        if ({
-             0x0022 => 1, # "
-             0x0027 => 1, # '
-             0x003C => 1, # <
-            }->{$self->{nc}}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad attribute name');
-        } else {
-          
-        }
-        $self->{ca}->{name} .= chr ($self->{nc});
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      }
-    } elsif ($self->{state} == AFTER_ATTRIBUTE_NAME_STATE) {
-      ## XML5: "Tag attribute name after state".
-      
-      if ($is_space->{$self->{nc}}) {
-        
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003D) { # =
-        
-        $self->{state} = BEFORE_ATTRIBUTE_VALUE_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        if ($self->{is_xml}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr value'); ## TODO: type
-        } else {
-          
-        }
-
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-
-        return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif (0x0041 <= $self->{nc} and
-               $self->{nc} <= 0x005A) { # A..Z
-        
-        $self->{ca}
-            = {name => chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020)),
-               value => '',
-               line => $self->{line}, column => $self->{column}};
-        $self->{state} = ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x002F) { # /
-        if ($self->{is_xml}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr value'); ## TODO: type
-        } else {
-          
-        }
-        
-        $self->{state} = SELF_CLOSING_START_TAG_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{s_kwd} = '';
-        $self->{state} = DATA_STATE;
-        # reconsume
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } else {
-        if ($self->{is_xml}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr value'); ## TODO: type
-        } else {
-          
-        }
-
-        if ({
-             0x0022 => 1, # "
-             0x0027 => 1, # '
-             0x003C => 1, # <
-            }->{$self->{nc}}) {
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad attribute name');
-        } else {
-          
-        }
-        $self->{ca}
-            = {name => chr ($self->{nc}),
-               value => '',
-               line => $self->{line}, column => $self->{column}};
-        $self->{state} = ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;        
-      }
-    } elsif ($self->{state} == BEFORE_ATTRIBUTE_VALUE_STATE) {
-      ## XML5: "Tag attribute value before state".
-
-      if ($is_space->{$self->{nc}}) {
-        
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
-        
-        $self->{state} = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x0026) { # &
-        
-        $self->{state} = ATTRIBUTE_VALUE_UNQUOTED_STATE;
-        ## reconsume
-        redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
-        
-        $self->{state} = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty unquoted attribute value');
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-
-        return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        ## reconsume
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } else {
-        if ($self->{nc} == 0x003D or $self->{nc} == 0x003C) { # =, <
-          
-          ## XML5: Not a parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad attribute value');
-        } elsif ($self->{is_xml}) {
-          
-          ## XML5: No parse error.
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'unquoted attr value'); ## TODO
-        } else {
-          
-        }
-        $self->{ca}->{value} .= chr ($self->{nc});
-        $self->{state} = ATTRIBUTE_VALUE_UNQUOTED_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      }
-    } elsif ($self->{state} == ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE) {
+    } elsif ($state == ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE) {
       ## XML5: "Tag attribute value double quoted state" and "DOCTYPE
       ## ATTLIST attribute value double quoted state".
       
-      if ($self->{nc} == 0x0022) { # "
+      if ($nc == 0x0022) { # "
         if ($self->{ct}->{type} == ATTLIST_TOKEN) {
           
           ## XML5: "DOCTYPE ATTLIST name after state".
@@ -1808,7 +1564,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0026) { # &
+      } elsif ($nc == 0x0026) { # &
         
         ## XML5: Not defined yet.
 
@@ -1816,7 +1572,7 @@ sub _get_next_token ($) {
         ## "entity in attribute value state".  In this implementation, the
         ## tokenizer is switched to the |ENTITY_STATE|, which is an
         ## implementation of the "consume a character reference" algorithm.
-        $self->{prev_state} = $self->{state};
+        $self->{prev_state} = $state;
         $self->{entity_add} = 0x0022; # "
         $self->{state} = ENTITY_STATE;
         
@@ -1832,7 +1588,7 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ($self->{is_xml} and 
-               $is_space->{$self->{nc}}) {
+               $is_space->{$nc}) {
         
         $self->{ca}->{value} .= ' ';
         ## Stay in the state.
@@ -1848,19 +1604,17 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed attribute value');
         if ($self->{ct}->{type} == START_TAG_TOKEN) {
           
           $self->{last_stag_name} = $self->{ct}->{tag_name};
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           ## reconsume
           return  ($self->{ct}); # start tag
           redo A;
         } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
           if ($self->{ct}->{attributes}) {
             
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
@@ -1870,7 +1624,6 @@ sub _get_next_token ($) {
           }
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           ## reconsume
 
           ## Discard the token.
@@ -1892,14 +1645,14 @@ sub _get_next_token ($) {
         }
       } else {
         ## XML5 [ATTLIST]: Not defined yet.
-        if ($self->{is_xml} and $self->{nc} == 0x003C) { # <
+        if ($self->{is_xml} and $nc == 0x003C) { # <
           
           ## XML5: Not a parse error.
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lt in attr value'); ## TODO: type
         } else {
           
         }
-        $self->{ca}->{value} .= chr ($self->{nc});
+        $self->{ca}->{value} .= chr ($nc);
         $self->{read_until}->($self->{ca}->{value},
                               qq["&<\x09\x0C\x20],
                               length $self->{ca}->{value});
@@ -1918,11 +1671,11 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE) {
+    } elsif ($state == ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE) {
       ## XML5: "Tag attribute value single quoted state" and "DOCTYPE
       ## ATTLIST attribute value single quoted state".
 
-      if ($self->{nc} == 0x0027) { # '
+      if ($nc == 0x0027) { # '
         if ($self->{ct}->{type} == ATTLIST_TOKEN) {
           
           ## XML5: "DOCTYPE ATTLIST name after state".
@@ -1945,7 +1698,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0026) { # &
+      } elsif ($nc == 0x0026) { # &
         
         ## XML5: Not defined yet.
 
@@ -1954,7 +1707,7 @@ sub _get_next_token ($) {
         ## tokenizer is switched to the |ENTITY_STATE|, which is an
         ## implementation of the "consume a character reference" algorithm.
         $self->{entity_add} = 0x0027; # '
-        $self->{prev_state} = $self->{state};
+        $self->{prev_state} = $state;
         $self->{state} = ENTITY_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -1969,7 +1722,7 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ($self->{is_xml} and 
-               $is_space->{$self->{nc}}) {
+               $is_space->{$nc}) {
         
         $self->{ca}->{value} .= ' ';
         ## Stay in the state.
@@ -1985,14 +1738,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed attribute value');
         if ($self->{ct}->{type} == START_TAG_TOKEN) {
           
           $self->{last_stag_name} = $self->{ct}->{tag_name};
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           ## reconsume
 
           ## Discard the token.
@@ -2000,7 +1752,6 @@ sub _get_next_token ($) {
 
           redo A;
         } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
           if ($self->{ct}->{attributes}) {
             
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
@@ -2010,7 +1761,6 @@ sub _get_next_token ($) {
           }
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           ## reconsume
 
           ## Discard the token.
@@ -2032,14 +1782,14 @@ sub _get_next_token ($) {
         }
       } else {
         ## XML5 [ATTLIST]: Not defined yet.
-        if ($self->{is_xml} and $self->{nc} == 0x003C) { # <
+        if ($self->{is_xml} and $nc == 0x003C) { # <
           
           ## XML5: Not a parse error.
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lt in attr value'); ## TODO: type
         } else {
           
         }
-        $self->{ca}->{value} .= chr ($self->{nc});
+        $self->{ca}->{value} .= chr ($nc);
         $self->{read_until}->($self->{ca}->{value},
                               qq['&<\x09\x0C\x20],
                               length $self->{ca}->{value});
@@ -2058,10 +1808,10 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == ATTRIBUTE_VALUE_UNQUOTED_STATE) {
+    } elsif ($state == ATTRIBUTE_VALUE_UNQUOTED_STATE) {
       ## XML5: "Tag attribute value unquoted state".
 
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         if ($self->{ct}->{type} == ATTLIST_TOKEN) {
           
           push @{$self->{ct}->{attrdefs}}, $self->{ca};
@@ -2083,17 +1833,18 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0026) { # &
+      } elsif ($nc == 0x0026) { # &
         
 
         ## XML5: Not defined yet.
 
-        ## NOTE: In the spec, the tokenizer is switched to the 
-        ## "entity in attribute value state".  In this implementation, the
-        ## tokenizer is switched to the |ENTITY_STATE|, which is an
-        ## implementation of the "consume a character reference" algorithm.
-        $self->{entity_add} = -1;
-        $self->{prev_state} = $self->{state};
+        ## NOTE: In the spec, the tokenizer is switched to the
+        ## "character reference in attribute value state".  In this
+        ## implementation, the tokenizer is switched to the
+        ## |ENTITY_STATE|, which is an implementation of the "consume
+        ## a character reference" algorithm.
+        $self->{entity_add} = 0x003E; # >
+        $self->{prev_state} = $state;
         $self->{state} = ENTITY_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2107,13 +1858,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         if ($self->{ct}->{type} == START_TAG_TOKEN) {
           
           $self->{last_stag_name} = $self->{ct}->{tag_name};
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -2128,7 +1878,6 @@ sub _get_next_token ($) {
           return  ($self->{ct}); # start tag
           redo A;
         } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
           if ($self->{ct}->{attributes}) {
             
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
@@ -2138,7 +1887,6 @@ sub _get_next_token ($) {
           }
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -2171,14 +1919,13 @@ sub _get_next_token ($) {
         } else {
           die "$0: $self->{ct}->{type}: Unknown token type";
         }
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         if ($self->{ct}->{type} == START_TAG_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
           $self->{last_stag_name} = $self->{ct}->{tag_name};
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           ## reconsume
 
           ## Discard the token.
@@ -2187,7 +1934,6 @@ sub _get_next_token ($) {
           redo A;
         } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
           if ($self->{ct}->{attributes}) {
             
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
@@ -2197,7 +1943,6 @@ sub _get_next_token ($) {
           }
 
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           ## reconsume
 
           ## Discard the token.
@@ -2223,14 +1968,15 @@ sub _get_next_token ($) {
              0x0027 => 1, # '
              0x003D => 1, # =
              0x003C => 1, # <
-            }->{$self->{nc}}) {
+             0x0060 => 1, # `
+            }->{$nc}) {
           
           ## XML5: Not a parse error.
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad attribute value');
         } else {
           
         }
-        $self->{ca}->{value} .= chr ($self->{nc});
+        $self->{ca}->{value} .= chr ($nc);
         $self->{read_until}->($self->{ca}->{value},
                               qq["'=& \x09\x0C>],
                               length $self->{ca}->{value});
@@ -2249,124 +1995,27 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_ATTRIBUTE_VALUE_QUOTED_STATE) {
-      if ($is_space->{$self->{nc}}) {
-        
-        $self->{state} = BEFORE_ATTRIBUTE_NAME_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-
-        return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } elsif ($self->{nc} == 0x002F) { # /
-        
-        $self->{state} = SELF_CLOSING_START_TAG_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag'); 
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        ## Reconsume.
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
-      } else {
-        
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space between attributes');
-        $self->{state} = BEFORE_ATTRIBUTE_NAME_STATE;
-        ## reconsume
-        redo A;
-      }
-    } elsif ($self->{state} == SELF_CLOSING_START_TAG_STATE) {
+    } elsif ($state == SELF_CLOSING_START_TAG_STATE) {
       ## XML5: "Empty tag state".
 
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         if ($self->{ct}->{type} == END_TAG_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'nestc', token => $self->{ct});
-          ## TODO: Different type than slash in start tag
-          $self->{content_model} = PCDATA_CONTENT_MODEL; # MUST
+          ## XXX: Different type than slash in start tag
           if ($self->{ct}->{attributes}) {
             
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
           } else {
             
           }
-          ## TODO: Test |<title></title/>|
+          ## XXX: Test |<title></title/>|
         } else {
           
           $self->{self_closing} = 1;
         }
 
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -2382,53 +2031,22 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # start tag or end tag
 
         redo A;
-      } elsif ($self->{nc} == -1) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed tag');
-        if ($self->{ct}->{type} == START_TAG_TOKEN) {
-          
-          $self->{last_stag_name} = $self->{ct}->{tag_name};
-        } elsif ($self->{ct}->{type} == END_TAG_TOKEN) {
-          if ($self->{ct}->{attributes}) {
-            
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'end tag attribute');
-          } else {
-            ## NOTE: This state should never be reached.
-            
-          }
-        } else {
-          die "$0: $self->{ct}->{type}: Unknown token type";
-        }
-        ## XML5: "Tag attribute name before state".
-        $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
-        ## Reconsume.
-
-        ## Discard the token.
-        #return  ($self->{ct}); # start tag or end tag
-
-        redo A;
       } else {
-        
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'nestc');
-        ## TODO: This error type is wrong.
-        $self->{state} = BEFORE_ATTRIBUTE_NAME_STATE;
-        ## Reconsume.
-        redo A;
+        die "$state/$nc is implemented";
       }
-    } elsif ($self->{state} == BOGUS_COMMENT_STATE) {
+    } elsif ($state == BOGUS_COMMENT_STATE) {
       ## XML5: "Bogus comment state" and "DOCTYPE bogus comment state".
 
       ## NOTE: Unlike spec's "bogus comment state", this implementation
       ## consumes characters one-by-one basis.
       
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         if ($self->{in_subset}) {
           
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2444,14 +2062,13 @@ sub _get_next_token ($) {
 
         return  ($self->{ct}); # comment
         redo A;
-      } elsif ($self->{nc} == -1) { 
+      } elsif ($nc == -1) { 
         if ($self->{in_subset}) {
           
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## reconsume
 
@@ -2459,7 +2076,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{data} .= chr ($self->{nc}); # comment
+        $self->{ct}->{data} .= chr ($nc); # comment
         $self->{read_until}->($self->{ct}->{data},
                               q[>],
                               length $self->{ct}->{data});
@@ -2478,10 +2095,10 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == MARKUP_DECLARATION_OPEN_STATE) {
+    } elsif ($state == MARKUP_DECLARATION_OPEN_STATE) {
       ## XML5: "Markup declaration state".
       
-      if ($self->{nc} == 0x002D) { # -
+      if ($nc == 0x002D) { # -
         
         $self->{state} = MD_HYPHEN_STATE;
         
@@ -2496,12 +2113,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0044 or # D
-               $self->{nc} == 0x0064) { # d
+      } elsif ($nc == 0x0044 or # D
+               $nc == 0x0064) { # d
         ## ASCII case-insensitive.
         
         $self->{state} = MD_DOCTYPE_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -2517,7 +2134,7 @@ sub _get_next_token ($) {
       } elsif ((($self->{insertion_mode} & IN_FOREIGN_CONTENT_IM and
                  $self->{open_elements}->[-1]->[1] & FOREIGN_EL) or
                 $self->{is_xml}) and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
                         
         $self->{state} = MD_CDATA_STATE;
         $self->{kwd} = '[';
@@ -2547,61 +2164,29 @@ sub _get_next_token ($) {
                                 column => $self->{column_prev} - 1,
                                };
       redo A;
-    } elsif ($self->{state} == MD_HYPHEN_STATE) {
-      if ($self->{nc} == 0x002D) { # -
-        
-        $self->{ct} = {type => COMMENT_TOKEN, data => '',
-                                  line => $self->{line_prev},
-                                  column => $self->{column_prev} - 2,
-                                 };
-        $self->{state} = COMMENT_START_STATE; ## XML5: "comment state".
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } else {
-        
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'bogus comment',
-                        line => $self->{line_prev},
-                        column => $self->{column_prev} - 2);
-        $self->{state} = BOGUS_COMMENT_STATE;
-        ## Reconsume.
-        $self->{ct} = {type => COMMENT_TOKEN,
-                                  data => '-',
-                                  line => $self->{line_prev},
-                                  column => $self->{column_prev} - 2,
-                                 };
-        redo A;
-      }
-    } elsif ($self->{state} == MD_DOCTYPE_STATE) {
+    } elsif ($state == MD_DOCTYPE_STATE) {
       ## ASCII case-insensitive.
-      if ($self->{nc} == [
+      if ($nc == [
             undef,
             0x004F, # O
             0x0043, # C
             0x0054, # T
             0x0059, # Y
             0x0050, # P
+            NEVER_CHAR, # (E)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
             undef,
             0x006F, # o
             0x0063, # c
             0x0074, # t
             0x0079, # y
             0x0070, # p
+            NEVER_CHAR, # (e)
           ]->[length $self->{kwd}]) {
         
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -2615,10 +2200,10 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 6 and
-               ($self->{nc} == 0x0045 or # E
-                $self->{nc} == 0x0065)) { # e
+               ($nc == 0x0045 or # E
+                $nc == 0x0065)) { # e
         if ($self->{is_xml} and
-            ($self->{kwd} ne 'DOCTYP' or $self->{nc} == 0x0065)) {
+            ($self->{kwd} ne 'DOCTYP' or $nc == 0x0065)) {
           
           ## XML5: case-sensitive.
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO
@@ -2660,17 +2245,18 @@ sub _get_next_token ($) {
                                  };
         redo A;
       }
-    } elsif ($self->{state} == MD_CDATA_STATE) {
-      if ($self->{nc} == {
+    } elsif ($state == MD_CDATA_STATE) {
+      if ($nc == {
             '[' => 0x0043, # C
             '[C' => 0x0044, # D
             '[CD' => 0x0041, # A
             '[CDA' => 0x0054, # T
             '[CDAT' => 0x0041, # A
+            '[CDATA' => NEVER_CHAR, # ([)
           }->{$self->{kwd}}) {
         
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -2684,7 +2270,7 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ($self->{kwd} eq '[CDATA' and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
         if ($self->{is_xml} and 
             not $self->{tainted} and
             @{$self->{open_elements} or []} == 0) {
@@ -2728,8 +2314,8 @@ sub _get_next_token ($) {
                                  };
         redo A;
       }
-    } elsif ($self->{state} == COMMENT_START_STATE) {
-      if ($self->{nc} == 0x002D) { # -
+    } elsif ($state == COMMENT_START_STATE) {
+      if ($nc == 0x002D) { # -
         
         $self->{state} = COMMENT_START_DASH_STATE;
         
@@ -2744,7 +2330,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bogus comment');
         if ($self->{in_subset}) {
           
@@ -2752,7 +2338,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2769,7 +2354,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed comment');
         if ($self->{in_subset}) {
           
@@ -2777,7 +2362,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## reconsume
 
@@ -2787,7 +2371,7 @@ sub _get_next_token ($) {
       } else {
         
         $self->{ct}->{data} # comment
-            .= chr ($self->{nc});
+            .= chr ($nc);
         $self->{state} = COMMENT_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2802,8 +2386,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == COMMENT_START_DASH_STATE) {
-      if ($self->{nc} == 0x002D) { # -
+    } elsif ($state == COMMENT_START_DASH_STATE) {
+      if ($nc == 0x002D) { # -
         
         $self->{state} = COMMENT_END_STATE;
         
@@ -2818,7 +2402,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bogus comment');
         if ($self->{in_subset}) {
           
@@ -2826,7 +2410,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2843,7 +2426,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed comment');
         if ($self->{in_subset}) {
           
@@ -2851,7 +2434,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## reconsume
 
@@ -2861,7 +2443,7 @@ sub _get_next_token ($) {
       } else {
         
         $self->{ct}->{data} # comment
-            .= '-' . chr ($self->{nc});
+            .= '-' . chr ($nc);
         $self->{state} = COMMENT_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2876,10 +2458,10 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == COMMENT_STATE) {
+    } elsif ($state == COMMENT_STATE) {
       ## XML5: "Comment state" and "DOCTYPE comment state".
 
-      if ($self->{nc} == 0x002D) { # -
+      if ($nc == 0x002D) { # -
         
         $self->{state} = COMMENT_END_DASH_STATE;
         
@@ -2894,7 +2476,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed comment');
         if ($self->{in_subset}) {
           
@@ -2902,7 +2484,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## reconsume
 
@@ -2911,7 +2492,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{data} .= chr ($self->{nc}); # comment
+        $self->{ct}->{data} .= chr ($nc); # comment
         $self->{read_until}->($self->{ct}->{data},
                               q[-],
                               length $self->{ct}->{data});
@@ -2930,10 +2511,10 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == COMMENT_END_DASH_STATE) {
+    } elsif ($state == COMMENT_END_DASH_STATE) {
       ## XML5: "Comment dash state" and "DOCTYPE comment dash state".
 
-      if ($self->{nc} == 0x002D) { # -
+      if ($nc == 0x002D) { # -
         
         $self->{state} = COMMENT_END_STATE;
         
@@ -2948,7 +2529,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed comment');
         if ($self->{in_subset}) {
           
@@ -2956,7 +2537,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## reconsume
 
@@ -2965,7 +2545,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{data} .= '-' . chr ($self->{nc}); # comment
+        $self->{ct}->{data} .= '-' . chr ($nc); # comment
         $self->{state} = COMMENT_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -2980,19 +2560,18 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == COMMENT_END_STATE or
-             $self->{state} == COMMENT_END_BANG_STATE) {
+    } elsif ($state == COMMENT_END_STATE or
+             $state == COMMENT_END_BANG_STATE) {
       ## XML5: "Comment end state" and "DOCTYPE comment end state".
       ## (No comment end bang state.)
 
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         if ($self->{in_subset}) {
           
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3009,8 +2588,8 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
-      } elsif ($self->{nc} == 0x002D) { # -
-        if ($self->{state} == COMMENT_END_BANG_STATE) {
+      } elsif ($nc == 0x002D) { # -
+        if ($state == COMMENT_END_BANG_STATE) {
           
           $self->{ct}->{data} .= '--!'; # comment
           $self->{state} = COMMENT_END_DASH_STATE;
@@ -3035,11 +2614,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{state} != COMMENT_END_BANG_STATE and
-               $is_space->{$self->{nc}}) {
+      } elsif ($state != COMMENT_END_BANG_STATE and
+               $is_space->{$nc}) {
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'comment end space'); # XXX error type
-        $self->{ct}->{data} .= '--' . chr ($self->{nc}); # comment
+        $self->{ct}->{data} .= '--' . chr ($nc); # comment
         $self->{state} = COMMENT_END_SPACE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3053,8 +2632,8 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{state} != COMMENT_END_BANG_STATE and
-               $self->{nc} == 0x0021) { # !
+      } elsif ($state != COMMENT_END_BANG_STATE and
+               $nc == 0x0021) { # !
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'comment end bang'); # XXX error type
         $self->{state} = COMMENT_END_BANG_STATE;
@@ -3070,7 +2649,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed comment');
         if ($self->{in_subset}) {
           
@@ -3078,7 +2657,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## Reconsume.
 
@@ -3087,10 +2665,10 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        if ($self->{state} == COMMENT_END_BANG_STATE) {
-          $self->{ct}->{data} .= '--!' . chr ($self->{nc}); # comment
+        if ($state == COMMENT_END_BANG_STATE) {
+          $self->{ct}->{data} .= '--!' . chr ($nc); # comment
         } else {
-          $self->{ct}->{data} .= '--' . chr ($self->{nc}); # comment
+          $self->{ct}->{data} .= '--' . chr ($nc); # comment
         }
         $self->{state} = COMMENT_STATE;
         
@@ -3106,17 +2684,16 @@ sub _get_next_token ($) {
   
         redo A;
       } 
-    } elsif ($self->{state} == COMMENT_END_SPACE_STATE) {
+    } elsif ($state == COMMENT_END_SPACE_STATE) {
       ## XML5: Not exist.
 
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         if ($self->{in_subset}) {
           
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3133,9 +2710,9 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
-      } elsif ($is_space->{$self->{nc}}) {
+      } elsif ($is_space->{$nc}) {
         
-        $self->{ct}->{data} .= chr ($self->{nc}); # comment
+        $self->{ct}->{data} .= chr ($nc); # comment
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3149,7 +2726,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed comment');
         if ($self->{in_subset}) {
           
@@ -3157,7 +2734,6 @@ sub _get_next_token ($) {
         } else {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## Reconsume.
 
@@ -3166,7 +2742,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{data} .= chr ($self->{nc}); # comment
+        $self->{ct}->{data} .= chr ($nc); # comment
         $self->{state} = COMMENT_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3181,8 +2757,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_STATE) {
+      if ($is_space->{$nc}) {
         
         $self->{state} = BEFORE_DOCTYPE_NAME_STATE;
         
@@ -3197,7 +2773,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
         $self->{ct}->{quirks} = 1;
@@ -3215,10 +2791,10 @@ sub _get_next_token ($) {
         ## reconsume
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_DOCTYPE_NAME_STATE) {
+    } elsif ($state == BEFORE_DOCTYPE_NAME_STATE) {
       ## XML5: "DOCTYPE root name before state".
 
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         
         ## Stay in the state
         
@@ -3233,12 +2809,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE name');
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -3254,10 +2829,10 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # DOCTYPE (quirks)
 
         redo A;
-      } elsif (0x0041 <= $self->{nc} and $self->{nc} <= 0x005A) { # A..Z
+      } elsif (0x0041 <= $nc and $nc <= 0x005A) { # A..Z
         
         $self->{ct}->{name} # DOCTYPE
-            = chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020));
+            = chr ($nc + ($self->{is_xml} ? 0 : 0x0020));
         delete $self->{ct}->{quirks};
         $self->{state} = DOCTYPE_NAME_STATE;
         
@@ -3272,17 +2847,16 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE name');
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## reconsume
 
         return  ($self->{ct}); # DOCTYPE (quirks)
 
         redo A;
-      } elsif ($self->{is_xml} and $self->{nc} == 0x005B) { # [
+      } elsif ($self->{is_xml} and $nc == 0x005B) { # [
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE name');
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -3303,7 +2877,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{name} = chr $self->{nc};
+        $self->{ct}->{name} = chr $nc;
         delete $self->{ct}->{quirks};
         $self->{state} = DOCTYPE_NAME_STATE;
         
@@ -3319,12 +2893,12 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_NAME_STATE) {
+    } elsif ($state == DOCTYPE_NAME_STATE) {
       ## XML5: "DOCTYPE root name state".
 
       ## ISSUE: Redundant "First," in the spec.
 
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         
         $self->{state} = AFTER_DOCTYPE_NAME_STATE;
         
@@ -3339,10 +2913,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -3358,10 +2931,10 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # DOCTYPE
 
         redo A;
-      } elsif (0x0041 <= $self->{nc} and $self->{nc} <= 0x005A) { # A..Z
+      } elsif (0x0041 <= $nc and $nc <= 0x005A) { # A..Z
         
         $self->{ct}->{name} # DOCTYPE
-            .= chr ($self->{nc} + ($self->{is_xml} ? 0 : 0x0020));
+            .= chr ($nc + ($self->{is_xml} ? 0 : 0x0020));
         delete $self->{ct}->{quirks};
         ## Stay in the state.
         
@@ -3376,18 +2949,17 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## reconsume
 
         $self->{ct}->{quirks} = 1;
         return  ($self->{ct}); # DOCTYPE
 
         redo A;
-      } elsif ($self->{is_xml} and $self->{nc} == 0x005B) { # [
+      } elsif ($self->{is_xml} and $nc == 0x005B) { # [
         
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         $self->{ct}->{has_internal_subset} = 1; # DOCTYPE
@@ -3407,7 +2979,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{name} .= chr ($self->{nc}); # DOCTYPE
+        $self->{ct}->{name} .= chr ($nc); # DOCTYPE
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3422,11 +2994,11 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_DOCTYPE_NAME_STATE) {
+    } elsif ($state == AFTER_DOCTYPE_NAME_STATE) {
       ## XML5: Corresponding to XML5's "DOCTYPE root name after
       ## state", but implemented differently.
 
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         
         ## Stay in the state
         
@@ -3441,11 +3013,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         } else {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'no md def'); ## TODO: type
@@ -3465,12 +3036,11 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -3481,11 +3051,11 @@ sub _get_next_token ($) {
         ## Reconsume.
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == 0x0050 or # P
-               $self->{nc} == 0x0070) { # p
+      } elsif ($nc == 0x0050 or # P
+               $nc == 0x0070) { # p
         
         $self->{state} = PUBLIC_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -3498,11 +3068,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0053 or # S
-               $self->{nc} == 0x0073) { # s
+      } elsif ($nc == 0x0053 or # S
+               $nc == 0x0073) { # s
         
         $self->{state} = SYSTEM_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -3515,7 +3085,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022 and # "
+      } elsif ($nc == 0x0022 and # "
                ($self->{ct}->{type} == GENERAL_ENTITY_TOKEN or
                 $self->{ct}->{type} == PARAMETER_ENTITY_TOKEN)) {
         
@@ -3533,7 +3103,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027 and # '
+      } elsif ($nc == 0x0027 and # '
                ($self->{ct}->{type} == GENERAL_ENTITY_TOKEN or
                 $self->{ct}->{type} == PARAMETER_ENTITY_TOKEN)) {
         
@@ -3553,7 +3123,7 @@ sub _get_next_token ($) {
         redo A;
       } elsif ($self->{is_xml} and
                $self->{ct}->{type} == DOCTYPE_TOKEN and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
         
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         $self->{ct}->{has_internal_subset} = 1; # DOCTYPE
@@ -3596,25 +3166,27 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == PUBLIC_STATE) {
+    } elsif ($state == PUBLIC_STATE) {
       ## ASCII case-insensitive
-      if ($self->{nc} == [
+      if ($nc == [
             undef, 
             0x0055, # U
             0x0042, # B
             0x004C, # L
             0x0049, # I
+            NEVER_CHAR, # (C)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
             undef, 
             0x0075, # u
             0x0062, # b
             0x006C, # l
             0x0069, # i
+            NEVER_CHAR, # (c)
           ]->[length $self->{kwd}]) {
         
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -3628,10 +3200,10 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 5 and
-               ($self->{nc} == 0x0043 or # C
-                $self->{nc} == 0x0063)) { # c
+               ($nc == 0x0043 or # C
+                $nc == 0x0063)) { # c
         if ($self->{is_xml} and
-            ($self->{kwd} ne 'PUBLI' or $self->{nc} == 0x0063)) { # c
+            ($self->{kwd} ne 'PUBLI' or $nc == 0x0063)) { # c
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
                           text => 'PUBLIC',
@@ -3640,6 +3212,113 @@ sub _get_next_token ($) {
         } else {
           
         }
+        $self->{state} = AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
+      } else {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'string after DOCTYPE name', ## TODO: type
+                        line => $self->{line_prev},
+                        column => $self->{column_prev} + 1 - length $self->{kwd});
+        if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
+          
+          $self->{ct}->{quirks} = 1;
+          $self->{state} = BOGUS_DOCTYPE_STATE;
+        } else {
+          
+          $self->{state} = BOGUS_MD_STATE;
+        }
+        ## Reconsume.
+        redo A;
+      }
+    } elsif ($state == SYSTEM_STATE) {
+      ## ASCII case-insensitive
+      if ($nc == [
+            undef, 
+            0x0059, # Y
+            0x0053, # S
+            0x0054, # T
+            0x0045, # E
+            NEVER_CHAR, # (M)
+          ]->[length $self->{kwd}] or
+          $nc == [
+            undef, 
+            0x0079, # y
+            0x0073, # s
+            0x0074, # t
+            0x0065, # e
+            NEVER_CHAR, # (m)
+          ]->[length $self->{kwd}]) {
+        
+        ## Stay in the state.
+        $self->{kwd} .= chr $nc;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
+      } elsif ((length $self->{kwd}) == 5 and
+               ($nc == 0x004D or # M
+                $nc == 0x006D)) { # m
+        if ($self->{is_xml} and
+            ($self->{kwd} ne 'SYSTE' or $nc == 0x006D)) { # m
+          
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
+                          text => 'SYSTEM',
+                          line => $self->{line_prev},
+                          column => $self->{column_prev} - 4);
+        } else {
+          
+        }
+        $self->{state} = AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
+      } else {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'string after DOCTYPE name', ## TODO: type
+                        line => $self->{line_prev},
+                        column => $self->{column_prev} + 1 - length $self->{kwd});
+        if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
+          
+          $self->{ct}->{quirks} = 1;
+          $self->{state} = BOGUS_DOCTYPE_STATE;
+        } else {
+          
+          $self->{state} = BOGUS_MD_STATE;
+        }
+        ## Reconsume.
+        redo A;
+      }
+    } elsif ($state == AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE or
+             $state == BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE) {
+      if ($is_space->{$nc}) {
+        
+        ## Stay in or switch to the state.
         $self->{state} = BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -3653,111 +3332,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } else {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'string after DOCTYPE name', ## TODO: type
-                        line => $self->{line_prev},
-                        column => $self->{column_prev} + 1 - length $self->{kwd});
-        if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
+      } elsif ($nc == 0x0022) { # "
+        if ($state == AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE) {
           
-          $self->{ct}->{quirks} = 1;
-          $self->{state} = BOGUS_DOCTYPE_STATE;
-        } else {
-          
-          $self->{state} = BOGUS_MD_STATE;
-        }
-        ## Reconsume.
-        redo A;
-      }
-    } elsif ($self->{state} == SYSTEM_STATE) {
-      ## ASCII case-insensitive
-      if ($self->{nc} == [
-            undef, 
-            0x0059, # Y
-            0x0053, # S
-            0x0054, # T
-            0x0045, # E
-          ]->[length $self->{kwd}] or
-          $self->{nc} == [
-            undef, 
-            0x0079, # y
-            0x0073, # s
-            0x0074, # t
-            0x0065, # e
-          ]->[length $self->{kwd}]) {
-        
-        ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ((length $self->{kwd}) == 5 and
-               ($self->{nc} == 0x004D or # M
-                $self->{nc} == 0x006D)) { # m
-        if ($self->{is_xml} and
-            ($self->{kwd} ne 'SYSTE' or $self->{nc} == 0x006D)) { # m
-          
-          $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
-                          text => 'SYSTEM',
-                          line => $self->{line_prev},
-                          column => $self->{column_prev} - 4);
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before pubid literal'); # XXX documentation
         } else {
           
         }
-        $self->{state} = BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } else {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'string after DOCTYPE name', ## TODO: type
-                        line => $self->{line_prev},
-                        column => $self->{column_prev} + 1 - length $self->{kwd});
-        if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
-          
-          $self->{ct}->{quirks} = 1;
-          $self->{state} = BOGUS_DOCTYPE_STATE;
-        } else {
-          
-          $self->{state} = BOGUS_MD_STATE;
-        }
-        ## Reconsume.
-        redo A;
-      }
-    } elsif ($self->{state} == BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE) {
-      if ($is_space->{$self->{nc}}) {
-        
-        ## Stay in the state
-        
-    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
-      $self->{line_prev} = $self->{line};
-      $self->{column_prev} = $self->{column};
-      $self->{column}++;
-      $self->{nc}
-          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
-    } else {
-      $self->{set_nc}->($self);
-    }
-  
-        redo A;
-      } elsif ($self->{nc} eq 0x0022) { # "
-        
         $self->{ct}->{pubid} = ''; # DOCTYPE
         $self->{state} = DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE;
         
@@ -3772,8 +3353,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} eq 0x0027) { # '
-        
+      } elsif ($nc == 0x0027) { # '
+        if ($state == AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE) {
+          
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before pubid literal'); # XXX documentation
+        } else {
+          
+        }
         $self->{ct}->{pubid} = ''; # DOCTYPE
         $self->{state} = DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE;
         
@@ -3788,13 +3374,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} eq 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no PUBLIC literal');
         
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -3814,12 +3399,11 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == EOF_CHAR) {
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -3827,12 +3411,12 @@ sub _get_next_token ($) {
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         }
         
-        ## reconsume
+        ## Reconsume.
         return  ($self->{ct}); # DOCTYPE
         redo A;
       } elsif ($self->{is_xml} and
                $self->{ct}->{type} == DOCTYPE_TOKEN and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no PUBLIC literal');
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -3876,8 +3460,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE) {
-      if ($self->{nc} == 0x0022) { # "
+    } elsif ($state == DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE) {
+      if ($nc == 0x0022) { # "
         
         $self->{state} = AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE;
         
@@ -3892,13 +3476,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed PUBLIC literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -3918,13 +3501,12 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed PUBLIC literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -3936,7 +3518,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{pubid} .= chr $self->{nc}; # DOCTYPE/ENTITY/NOTATION
+        $self->{ct}->{pubid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
         $self->{read_until}->($self->{ct}->{pubid}, q[">],
                               length $self->{ct}->{pubid});
 
@@ -3954,8 +3536,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE) {
-      if ($self->{nc} == 0x0027) { # '
+    } elsif ($state == DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE) {
+      if ($nc == 0x0027) { # '
         
         $self->{state} = AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE;
         
@@ -3970,13 +3552,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed PUBLIC literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -3996,13 +3577,12 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed PUBLIC literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4014,7 +3594,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{pubid} .= chr $self->{nc}; # DOCTYPE/ENTITY/NOTATION
+        $self->{ct}->{pubid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
         $self->{read_until}->($self->{ct}->{pubid}, q['>],
                               length $self->{ct}->{pubid});
 
@@ -4032,10 +3612,12 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE or
+             $state == BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDS_STATE) {
+      if ($is_space->{$nc}) {
         
-        ## Stay in the state
+        ## Stay in or switch to the state.
+        $self->{state} = BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDS_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4048,8 +3630,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
-        
+      } elsif ($nc == 0x0022) { # "
+        if ($state == AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE) {
+          
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before system literal'); # XXX documentation
+        } else {
+          
+        }
         $self->{ct}->{sysid} = ''; # DOCTYPE/ENTITY/NOTATION
         $self->{state} = DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE;
         
@@ -4064,8 +3651,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
-        
+      } elsif ($nc == 0x0027) { # '
+        if ($state == AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE) {
+          
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before system literal'); # XXX documentation
+        } else {
+          
+        }
         $self->{ct}->{sysid} = ''; # DOCTYPE/ENTITY/NOTATION
         $self->{state} = DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE;
         
@@ -4080,7 +3672,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           if ($self->{is_xml}) {
             
@@ -4089,7 +3681,6 @@ sub _get_next_token ($) {
             
           }
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         } else {
           if ($self->{ct}->{type} == NOTATION_TOKEN) {
             
@@ -4113,25 +3704,24 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == EOF_CHAR) {
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         }
-        
-        ## reconsume
+
+        ## Reconsume.
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
       } elsif ($self->{is_xml} and
                $self->{ct}->{type} == DOCTYPE_TOKEN and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no SYSTEM literal');
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -4175,10 +3765,12 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE or
+             $state == BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE) {
+      if ($is_space->{$nc}) {
         
-        ## Stay in the state
+        ## Stay in or switch to the state.
+        $self->{state} = BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4191,8 +3783,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
-        
+      } elsif ($nc == 0x0022) { # "
+        if ($state == AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE) {
+          
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before system literal'); # XXX documentation
+        } else {
+          
+        }
         $self->{ct}->{sysid} = ''; # DOCTYPE
         $self->{state} = DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE;
         
@@ -4207,8 +3804,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
-        
+      } elsif ($nc == 0x0027) { # '
+        if ($state == AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE) {
+          
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before system literal'); # XXX documentation
+        } else {
+          
+        }
         $self->{ct}->{sysid} = ''; # DOCTYPE
         $self->{state} = DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE;
         
@@ -4223,7 +3825,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no SYSTEM literal');
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -4240,7 +3842,6 @@ sub _get_next_token ($) {
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4249,12 +3850,11 @@ sub _get_next_token ($) {
 
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == EOF_CHAR) {
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4262,12 +3862,12 @@ sub _get_next_token ($) {
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         }
         
-        ## reconsume
+        ## Reconsume.
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
       } elsif ($self->{is_xml} and
                $self->{ct}->{type} == DOCTYPE_TOKEN and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no SYSTEM literal');
 
@@ -4312,8 +3912,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE) {
-      if ($self->{nc} == 0x0022) { # "
+    } elsif ($state == DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE) {
+      if ($nc == 0x0022) { # "
         
         $self->{state} = AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
         
@@ -4328,13 +3928,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif (not $self->{is_xml} and $self->{nc} == 0x003E) { # >
+      } elsif (not $self->{is_xml} and $nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed SYSTEM literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4354,13 +3953,12 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed SYSTEM literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4372,7 +3970,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{sysid} .= chr $self->{nc}; # DOCTYPE/ENTITY/NOTATION
+        $self->{ct}->{sysid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
         $self->{read_until}->($self->{ct}->{sysid}, q[">],
                               length $self->{ct}->{sysid});
 
@@ -4390,8 +3988,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE) {
-      if ($self->{nc} == 0x0027) { # '
+    } elsif ($state == DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE) {
+      if ($nc == 0x0027) { # '
         
         $self->{state} = AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
         
@@ -4406,12 +4004,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif (not $self->{is_xml} and $self->{nc} == 0x003E) { # >
+      } elsif (not $self->{is_xml} and $nc == 0x003E) { # >
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed SYSTEM literal');
 
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4428,13 +4025,12 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # DOCTYPE
 
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed SYSTEM literal');
 
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4446,7 +4042,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{sysid} .= chr $self->{nc}; # DOCTYPE/ENTITY/NOTATION
+        $self->{ct}->{sysid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
         $self->{read_until}->($self->{ct}->{sysid}, q['>],
                               length $self->{ct}->{sysid});
 
@@ -4464,8 +4060,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE) {
+      if ($is_space->{$nc}) {
         if ($self->{ct}->{type} == GENERAL_ENTITY_TOKEN) {
           
           $self->{state} = BEFORE_NDATA_STATE;
@@ -4485,11 +4081,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         } else {
           
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -4509,12 +4104,12 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
       } elsif ($self->{ct}->{type} == GENERAL_ENTITY_TOKEN and
-               ($self->{nc} == 0x004E or # N
-                $self->{nc} == 0x006E)) { # n
+               ($nc == 0x004E or # N
+                $nc == 0x006E)) { # n
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before NDATA'); ## TODO: type
         $self->{state} = NDATA_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4527,12 +4122,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         if ($self->{ct}->{type} == DOCTYPE_TOKEN) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
           $self->{ct}->{quirks} = 1;
         } else {
           
@@ -4545,7 +4139,7 @@ sub _get_next_token ($) {
         redo A;
       } elsif ($self->{is_xml} and
                $self->{ct}->{type} == DOCTYPE_TOKEN and
-               $self->{nc} == 0x005B) { # [
+               $nc == 0x005B) { # [
         
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         $self->{ct}->{has_internal_subset} = 1; # DOCTYPE
@@ -4588,8 +4182,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_NDATA_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == BEFORE_NDATA_STATE) {
+      if ($is_space->{$nc}) {
         
         ## Stay in the state.
         
@@ -4604,7 +4198,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -4620,11 +4214,11 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ENTITY
         redo A;
-      } elsif ($self->{nc} == 0x004E or # N
-               $self->{nc} == 0x006E) { # n
+      } elsif ($nc == 0x004E or # N
+               $nc == 0x006E) { # n
         
         $self->{state} = NDATA_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4637,7 +4231,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -4661,11 +4255,10 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == BOGUS_DOCTYPE_STATE) {
-      if ($self->{nc} == 0x003E) { # >
+    } elsif ($state == BOGUS_DOCTYPE_STATE) {
+      if ($nc == 0x003E) { # >
         
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4681,7 +4274,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # DOCTYPE
 
         redo A;
-      } elsif ($self->{is_xml} and $self->{nc} == 0x005B) { # [
+      } elsif ($self->{is_xml} and $nc == 0x005B) { # [
         
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         $self->{ct}->{has_internal_subset} = 1; # DOCTYPE
@@ -4699,10 +4292,9 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## reconsume
 
         return  ($self->{ct}); # DOCTYPE
@@ -4727,14 +4319,14 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == CDATA_SECTION_STATE) {
+    } elsif ($state == CDATA_SECTION_STATE) {
       ## NOTE: "CDATA section state" in the state is jointly implemented
       ## by three states, |CDATA_SECTION_STATE|, |CDATA_SECTION_MSE1_STATE|,
       ## and |CDATA_SECTION_MSE2_STATE|.
 
       ## XML5: "CDATA state".
       
-      if ($self->{nc} == 0x005D) { # ]
+      if ($nc == 0x005D) { # ]
         
         $self->{state} = CDATA_SECTION_MSE1_STATE;
         
@@ -4749,7 +4341,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         if ($self->{is_xml}) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'no mse'); ## TODO: type
@@ -4758,7 +4350,6 @@ sub _get_next_token ($) {
         }
 
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## Reconsume.
         if (length $self->{ct}->{data}) { # character
           
@@ -4770,7 +4361,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         
-        $self->{ct}->{data} .= chr $self->{nc};
+        $self->{ct}->{data} .= chr $nc;
         $self->{read_until}->($self->{ct}->{data},
                               q<]>,
                               length $self->{ct}->{data});
@@ -4791,10 +4382,10 @@ sub _get_next_token ($) {
       }
 
       ## ISSUE: "text tokens" in spec.
-    } elsif ($self->{state} == CDATA_SECTION_MSE1_STATE) {
+    } elsif ($state == CDATA_SECTION_MSE1_STATE) {
       ## XML5: "CDATA bracket state".
 
-      if ($self->{nc} == 0x005D) { # ]
+      if ($nc == 0x005D) { # ]
         
         $self->{state} = CDATA_SECTION_MSE2_STATE;
         
@@ -4817,12 +4408,11 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == CDATA_SECTION_MSE2_STATE) {
+    } elsif ($state == CDATA_SECTION_MSE2_STATE) {
       ## XML5: "CDATA end state".
 
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4842,7 +4432,7 @@ sub _get_next_token ($) {
           ## No token to emit. $self->{ct} is discarded.
         }
         redo A;
-      } elsif ($self->{nc} == 0x005D) { # ]
+      } elsif ($nc == 0x005D) { # ]
          # character
         $self->{ct}->{data} .= ']'; ## Add first "]" of "]]]".
         ## Stay in the state.
@@ -4865,18 +4455,18 @@ sub _get_next_token ($) {
         ## Reconsume. ## XML5: Emit.
         redo A;
       }
-    } elsif ($self->{state} == ENTITY_STATE) {
-      if ($is_space->{$self->{nc}} or
+    } elsif ($state == ENTITY_STATE) {
+      if ($is_space->{$nc} or
           {
             0x003C => 1, 0x0026 => 1, -1 => 1, # <, &
             $self->{entity_add} => 1,
-          }->{$self->{nc}}) {
+          }->{$nc}) {
         if ($self->{is_xml}) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'bare ero',
                           line => $self->{line_prev},
                           column => $self->{column_prev}
-                              + ($self->{nc} == -1 ? 1 : 0));
+                              + ($nc == -1 ? 1 : 0));
         } else {
           
           ## No error
@@ -4884,7 +4474,7 @@ sub _get_next_token ($) {
         ## Don't consume
         ## Return nothing.
         #
-      } elsif ($self->{nc} == 0x0023) { # #
+      } elsif ($nc == 0x0023) { # #
         
         $self->{state} = ENTITY_HASH_STATE;
         $self->{kwd} = '#';
@@ -4901,14 +4491,14 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ($self->{is_xml} or
-               (0x0041 <= $self->{nc} and
-                $self->{nc} <= 0x005A) or # A..Z
-               (0x0061 <= $self->{nc} and
-                $self->{nc} <= 0x007A)) { # a..z
+               (0x0041 <= $nc and
+                $nc <= 0x005A) or # A..Z
+               (0x0061 <= $nc and
+                $nc <= 0x007A)) { # a..z
         
         require HTML::HTML5::Parser::NamedEntityList;
         $self->{state} = ENTITY_NAME_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         $self->{entity__value} = $self->{kwd};
         $self->{entity__match} = 0;
         
@@ -4936,10 +4526,10 @@ sub _get_next_token ($) {
       ## appended to the parent element or the attribute value in later
       ## process of the tokenizer.
 
-      if ($self->{prev_state} == DATA_STATE) {
+      if ($self->{prev_state} == DATA_STATE or
+          $self->{prev_state} == RCDATA_STATE) {
         
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => CHARACTER_TOKEN, data => '&',
                   line => $self->{line_prev},
@@ -4950,15 +4540,14 @@ sub _get_next_token ($) {
         
         $self->{ca}->{value} .= '&';
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == ENTITY_HASH_STATE) {
-      if ($self->{nc} == 0x0078) { # x
+    } elsif ($state == ENTITY_HASH_STATE) {
+      if ($nc == 0x0078) { # x
         
         $self->{state} = HEXREF_X_STATE;
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4971,13 +4560,13 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0058) { # X
+      } elsif ($nc == 0x0058) { # X
         
         if ($self->{is_xml}) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'uppercase hcro'); ## TODO: type
         }
         $self->{state} = HEXREF_X_STATE;
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -4990,11 +4579,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif (0x0030 <= $self->{nc} and
-               $self->{nc} <= 0x0039) { # 0..9
+      } elsif (0x0030 <= $nc and
+               $nc <= 0x0039) { # 0..9
         
         $self->{state} = NCR_NUM_STATE;
-        $self->{kwd} = $self->{nc} - 0x0030;
+        $self->{kwd} = $nc - 0x0030;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5016,10 +4605,10 @@ sub _get_next_token ($) {
         ## and then "&#" is appended to the parent element or the attribute 
         ## value in the later processing.
 
-        if ($self->{prev_state} == DATA_STATE) {
+        if ($self->{prev_state} == DATA_STATE or
+            $self->{prev_state} == RCDATA_STATE) {
           
           $self->{state} = $self->{prev_state};
-          $self->{s_kwd} = '';
           ## Reconsume.
           return  ({type => CHARACTER_TOKEN,
                     data => '&#',
@@ -5031,17 +4620,16 @@ sub _get_next_token ($) {
           
           $self->{ca}->{value} .= '&#';
           $self->{state} = $self->{prev_state};
-          $self->{s_kwd} = '';
           ## Reconsume.
           redo A;
         }
       }
-    } elsif ($self->{state} == NCR_NUM_STATE) {
-      if (0x0030 <= $self->{nc} and 
-          $self->{nc} <= 0x0039) { # 0..9
+    } elsif ($state == NCR_NUM_STATE) {
+      if (0x0030 <= $nc and 
+          $nc <= 0x0039) { # 0..9
         
         $self->{kwd} *= 10;
-        $self->{kwd} += $self->{nc} - 0x0030;
+        $self->{kwd} += $nc - 0x0030;
         
         ## Stay in the state.
         
@@ -5056,7 +4644,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003B) { # ;
+      } elsif ($nc == 0x003B) { # ;
         
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5096,10 +4684,10 @@ sub _get_next_token ($) {
         $code = 0xFFFD;
       }
 
-      if ($self->{prev_state} == DATA_STATE) {
+      if ($self->{prev_state} == DATA_STATE or
+          $self->{prev_state} == RCDATA_STATE) {
         
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => CHARACTER_TOKEN, data => chr $code,
                   has_reference => 1,
@@ -5111,14 +4699,13 @@ sub _get_next_token ($) {
         $self->{ca}->{value} .= chr $code;
         $self->{ca}->{has_reference} = 1;
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == HEXREF_X_STATE) {
-      if ((0x0030 <= $self->{nc} and $self->{nc} <= 0x0039) or
-          (0x0041 <= $self->{nc} and $self->{nc} <= 0x0046) or
-          (0x0061 <= $self->{nc} and $self->{nc} <= 0x0066)) {
+    } elsif ($state == HEXREF_X_STATE) {
+      if ((0x0030 <= $nc and $nc <= 0x0039) or
+          (0x0041 <= $nc and $nc <= 0x0046) or
+          (0x0061 <= $nc and $nc <= 0x0066)) {
         # 0..9, A..F, a..f
         
         $self->{state} = HEXREF_HEX_STATE;
@@ -5134,10 +4721,10 @@ sub _get_next_token ($) {
         ## and then "&#" followed by "X" or "x" is appended to the parent
         ## element or the attribute value in the later processing.
 
-        if ($self->{prev_state} == DATA_STATE) {
+        if ($self->{prev_state} == DATA_STATE or
+            $self->{prev_state} == RCDATA_STATE) {
           
           $self->{state} = $self->{prev_state};
-          $self->{s_kwd} = '';
           ## Reconsume.
           return  ({type => CHARACTER_TOKEN,
                     data => '&' . $self->{kwd},
@@ -5149,17 +4736,16 @@ sub _get_next_token ($) {
           
           $self->{ca}->{value} .= '&' . $self->{kwd};
           $self->{state} = $self->{prev_state};
-          $self->{s_kwd} = '';
           ## Reconsume.
           redo A;
         }
       }
-    } elsif ($self->{state} == HEXREF_HEX_STATE) {
-      if (0x0030 <= $self->{nc} and $self->{nc} <= 0x0039) {
+    } elsif ($state == HEXREF_HEX_STATE) {
+      if (0x0030 <= $nc and $nc <= 0x0039) {
         # 0..9
         
         $self->{kwd} *= 0x10;
-        $self->{kwd} += $self->{nc} - 0x0030;
+        $self->{kwd} += $nc - 0x0030;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5173,11 +4759,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif (0x0061 <= $self->{nc} and
-               $self->{nc} <= 0x0066) { # a..f
+      } elsif (0x0061 <= $nc and
+               $nc <= 0x0066) { # a..f
         
         $self->{kwd} *= 0x10;
-        $self->{kwd} += $self->{nc} - 0x0060 + 9;
+        $self->{kwd} += $nc - 0x0060 + 9;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5191,11 +4777,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif (0x0041 <= $self->{nc} and
-               $self->{nc} <= 0x0046) { # A..F
+      } elsif (0x0041 <= $nc and
+               $nc <= 0x0046) { # A..F
         
         $self->{kwd} *= 0x10;
-        $self->{kwd} += $self->{nc} - 0x0040 + 9;
+        $self->{kwd} += $nc - 0x0040 + 9;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5209,7 +4795,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003B) { # ;
+      } elsif ($nc == 0x003B) { # ;
         
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5251,10 +4837,10 @@ sub _get_next_token ($) {
         $code = 0xFFFD;
       }
 
-      if ($self->{prev_state} == DATA_STATE) {
+      if ($self->{prev_state} == DATA_STATE or
+          $self->{prev_state} == RCDATA_STATE) {
         
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => CHARACTER_TOKEN, data => chr $code,
                   has_reference => 1,
@@ -5266,29 +4852,28 @@ sub _get_next_token ($) {
         $self->{ca}->{value} .= chr $code;
         $self->{ca}->{has_reference} = 1;
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == ENTITY_NAME_STATE) {
-      if ((0x0041 <= $self->{nc} and # a
-           $self->{nc} <= 0x005A) or # x
-          (0x0061 <= $self->{nc} and # a
-           $self->{nc} <= 0x007A) or # z
-          (0x0030 <= $self->{nc} and # 0
-           $self->{nc} <= 0x0039) or # 9
-          $self->{nc} == 0x003B or # ;
+    } elsif ($state == ENTITY_NAME_STATE) {
+      if ((0x0041 <= $nc and # a
+           $nc <= 0x005A) or # x
+          (0x0061 <= $nc and # a
+           $nc <= 0x007A) or # z
+          (0x0030 <= $nc and # 0
+           $nc <= 0x0039) or # 9
+          $nc == 0x003B or # ;
           ($self->{is_xml} and
-           not ($is_space->{$self->{nc}} or
+           not ($is_space->{$nc} or
                 {
                   0x003C => 1, 0x0026 => 1, -1 => 1, # <, &
                   $self->{entity_add} => 1,
-                }->{$self->{nc}}))) {
+                }->{$nc}))) {
         our $EntityChar;
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         if (defined $EntityChar->{$self->{kwd}} or
             $self->{ge}->{$self->{kwd}}) {
-          if ($self->{nc} == 0x003B) { # ;
+          if ($nc == 0x003B) { # ;
             if (defined $self->{ge}->{$self->{kwd}}) {
               if ($self->{ge}->{$self->{kwd}}->{only_text}) {
                 
@@ -5354,7 +4939,7 @@ sub _get_next_token ($) {
           }
         } else {
           
-          $self->{entity__value} .= chr $self->{nc};
+          $self->{entity__value} .= chr $nc;
           $self->{entity__match} *= 2;
           ## Stay in the state.
           
@@ -5382,6 +4967,7 @@ sub _get_next_token ($) {
       } elsif ($self->{entity__match} < 0) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no refc');
         if ($self->{prev_state} != DATA_STATE and # in attribute
+            $self->{prev_state} != RCDATA_STATE and
             $self->{entity__match} < -1) {
           
           $data = '&' . $self->{kwd};
@@ -5411,10 +4997,10 @@ sub _get_next_token ($) {
       ## that would not be consumed are appended in the data state or in an
       ## appropriate attribute value state anyway.
  
-      if ($self->{prev_state} == DATA_STATE) {
+      if ($self->{prev_state} == DATA_STATE or
+          $self->{prev_state} == RCDATA_STATE) {
         
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => CHARACTER_TOKEN,
                   data => $data,
@@ -5428,19 +5014,18 @@ sub _get_next_token ($) {
         $self->{ca}->{value} .= $data;
         $self->{ca}->{has_reference} = 1 if $has_ref;
         $self->{state} = $self->{prev_state};
-        $self->{s_kwd} = '';
         ## Reconsume.
         redo A;
       }
 
     ## XML-only states
 
-    } elsif ($self->{state} == PI_STATE) {
+    } elsif ($state == PI_STATE) {
       ## XML5: "Pi state" and "DOCTYPE pi state".
 
-      if ($is_space->{$self->{nc}} or
-          $self->{nc} == 0x003F or # ?
-          $self->{nc} == -1) {
+      if ($is_space->{$nc} or
+          $nc == 0x003F or # ?
+          $nc == -1) {
         ## XML5: U+003F: "pi state": Same as "Anything else"; "DOCTYPE
         ## pi state": Switch to the "DOCTYPE pi after state".  EOF:
         ## "DOCTYPE pi state": Parse error, switch to the "data
@@ -5448,20 +5033,20 @@ sub _get_next_token ($) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bare pio', ## TODO: type
                         line => $self->{line_prev},
                         column => $self->{column_prev}
-                            - 1 * ($self->{nc} != -1));
+                            - 1 * ($nc != -1));
         $self->{state} = BOGUS_COMMENT_STATE;
         ## Reconsume.
         $self->{ct} = {type => COMMENT_TOKEN,
                        data => '?',
                        line => $self->{line_prev},
                        column => $self->{column_prev}
-                           - 1 * ($self->{nc} != -1),
+                           - 1 * ($nc != -1),
                       };
         redo A;
       } else {
         ## XML5: "DOCTYPE pi state": Stay in the state.
         $self->{ct} = {type => PI_TOKEN,
-                       target => chr $self->{nc},
+                       target => chr $nc,
                        data => '',
                        line => $self->{line_prev},
                        column => $self->{column_prev} - 1,
@@ -5480,8 +5065,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == PI_TARGET_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == PI_TARGET_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = PI_TARGET_AFTER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5495,18 +5080,17 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no pic'); ## TODO: type
         if ($self->{in_subset}) {
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## Reconsume.
         return  ($self->{ct}); # pi
         redo A;
-      } elsif ($self->{nc} == 0x003F) { # ?
+      } elsif ($nc == 0x003F) { # ?
         $self->{state} = PI_AFTER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5522,7 +5106,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: typo ("tag name" -> "target")
-        $self->{ct}->{target} .= chr $self->{nc}; # pi
+        $self->{ct}->{target} .= chr $nc; # pi
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5536,8 +5120,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == PI_TARGET_AFTER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == PI_TARGET_AFTER_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5556,8 +5140,8 @@ sub _get_next_token ($) {
         ## Reprocess.
         redo A;
       }
-    } elsif ($self->{state} == PI_DATA_STATE) {
-      if ($self->{nc} == 0x003F) { # ?
+    } elsif ($state == PI_DATA_STATE) {
+      if ($nc == 0x003F) { # ?
         $self->{state} = PI_DATA_AFTER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5571,19 +5155,18 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no pic'); ## TODO: type
         if ($self->{in_subset}) {
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state"
         } else {
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         ## Reprocess.
         return  ($self->{ct}); # pi
         redo A;
       } else {
-        $self->{ct}->{data} .= chr $self->{nc}; # pi
+        $self->{ct}->{data} .= chr $nc; # pi
         $self->{read_until}->($self->{ct}->{data}, q[?],
                               length $self->{ct}->{data});
         ## Stay in the state.
@@ -5601,15 +5184,14 @@ sub _get_next_token ($) {
         ## Reprocess.
         redo A;
       }
-    } elsif ($self->{state} == PI_AFTER_STATE) {
+    } elsif ($state == PI_AFTER_STATE) {
       ## XML5: Part of "Pi after state".
 
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         if ($self->{in_subset}) {
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5624,7 +5206,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # pi
         redo A;
-      } elsif ($self->{nc} == 0x003F) { # ?
+      } elsif ($nc == 0x003F) { # ?
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no s after target', ## TODO: type
                         line => $self->{line_prev},
                         column => $self->{column_prev}); ## XML5: no error
@@ -5646,21 +5228,20 @@ sub _get_next_token ($) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no s after target', ## TODO: type
                         line => $self->{line_prev},
                         column => $self->{column_prev}
-                            + 1 * ($self->{nc} == -1)); ## XML5: no error
+                            + 1 * ($nc == -1)); ## XML5: no error
         $self->{ct}->{data} .= '?'; ## XML5: not appended
         $self->{state} = PI_DATA_STATE;
         ## Reprocess.
         redo A;
       }
-    } elsif ($self->{state} == PI_DATA_AFTER_STATE) {
+    } elsif ($state == PI_DATA_AFTER_STATE) {
       ## XML5: Same as "pi after state" and "DOCTYPE pi after state".
 
-      if ($self->{nc} == 0x003E) { # >
+      if ($nc == 0x003E) { # >
         if ($self->{in_subset}) {
           $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         } else {
           $self->{state} = DATA_STATE;
-          $self->{s_kwd} = '';
         }
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5675,7 +5256,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # pi
         redo A;
-      } elsif ($self->{nc} == 0x003F) { # ?
+      } elsif ($nc == 0x003F) { # ?
         $self->{ct}->{data} .= '?';
         ## Stay in the state.
         
@@ -5697,8 +5278,8 @@ sub _get_next_token ($) {
         redo A;
       }
 
-    } elsif ($self->{state} == DOCTYPE_INTERNAL_SUBSET_STATE) {
-      if ($self->{nc} == 0x003C) { # <
+    } elsif ($state == DOCTYPE_INTERNAL_SUBSET_STATE) {
+      if ($nc == 0x003C) { # <
         $self->{state} = DOCTYPE_TAG_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5712,7 +5293,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0025) { # %
+      } elsif ($nc == 0x0025) { # %
         ## XML5: Not defined yet.
 
         ## TODO:
@@ -5736,7 +5317,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x005D) { # ]
+      } elsif ($nc == 0x005D) { # ]
         delete $self->{in_subset};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_AFTER_STATE;
         
@@ -5751,7 +5332,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($is_space->{$self->{nc}}) {
+      } elsif ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5765,11 +5346,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed internal subset'); ## TODO: type
         delete $self->{in_subset};
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => END_OF_DOCTYPE_TOKEN});
         redo A;
@@ -5793,10 +5373,9 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_INTERNAL_SUBSET_AFTER_STATE) {
-      if ($self->{nc} == 0x003E) { # >
+    } elsif ($state == DOCTYPE_INTERNAL_SUBSET_AFTER_STATE) {
+      if ($nc == 0x003E) { # >
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5810,10 +5389,9 @@ sub _get_next_token ($) {
   
         return  ({type => END_OF_DOCTYPE_TOKEN});
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed DOCTYPE');
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => END_OF_DOCTYPE_TOKEN});
         redo A;
@@ -5835,10 +5413,9 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == BOGUS_DOCTYPE_INTERNAL_SUBSET_AFTER_STATE) {
-      if ($self->{nc} == 0x003E) { # >
+    } elsif ($state == BOGUS_DOCTYPE_INTERNAL_SUBSET_AFTER_STATE) {
+      if ($nc == 0x003E) { # >
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5852,9 +5429,8 @@ sub _get_next_token ($) {
   
         return  ({type => END_OF_DOCTYPE_TOKEN});
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## Reconsume.
         return  ({type => END_OF_DOCTYPE_TOKEN});
         redo A;
@@ -5873,8 +5449,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_TAG_STATE) {
-      if ($self->{nc} == 0x0021) { # !
+    } elsif ($state == DOCTYPE_TAG_STATE) {
+      if ($nc == 0x0021) { # !
         $self->{state} = DOCTYPE_MARKUP_DECLARATION_OPEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5888,7 +5464,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003F) { # ?
+      } elsif ($nc == 0x003F) { # ?
         $self->{state} = PI_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5902,10 +5478,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bare stago');
         $self->{state} = DATA_STATE;
-        $self->{s_kwd} = '';
         ## Reconsume.
         redo A;
       } else {
@@ -5929,10 +5504,10 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_MARKUP_DECLARATION_OPEN_STATE) {
+    } elsif ($state == DOCTYPE_MARKUP_DECLARATION_OPEN_STATE) {
       ## XML5: "DOCTYPE markup declaration state".
       
-      if ($self->{nc} == 0x002D) { # -
+      if ($nc == 0x002D) { # -
         $self->{state} = MD_HYPHEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -5946,10 +5521,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0045 or # E
-               $self->{nc} == 0x0065) { # e
+      } elsif ($nc == 0x0045 or # E
+               $nc == 0x0065) { # e
         $self->{state} = MD_E_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5962,10 +5537,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0041 or # A
-               $self->{nc} == 0x0061) { # a
+      } elsif ($nc == 0x0041 or # A
+               $nc == 0x0061) { # a
         $self->{state} = MD_ATTLIST_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5978,10 +5553,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x004E or # N
-               $self->{nc} == 0x006E) { # n
+      } elsif ($nc == 0x004E or # N
+               $nc == 0x006E) { # n
         $self->{state} = MD_NOTATION_STATE;
-        $self->{kwd} = chr $self->{nc};
+        $self->{kwd} = chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6006,11 +5581,11 @@ sub _get_next_token ($) {
       $self->{state} = BOGUS_COMMENT_STATE;
       $self->{ct} = {type => COMMENT_TOKEN, data => ''}; ## Will be discarded.
       redo A;
-    } elsif ($self->{state} == MD_E_STATE) {
-      if ($self->{nc} == 0x004E or # N
-          $self->{nc} == 0x006E) { # n
+    } elsif ($state == MD_E_STATE) {
+      if ($nc == 0x004E or # N
+          $nc == 0x006E) { # n
         $self->{state} = MD_ENTITY_STATE;
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6023,11 +5598,11 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x004C or # L
-               $self->{nc} == 0x006C) { # l
+      } elsif ($nc == 0x004C or # L
+               $nc == 0x006C) { # l
         ## XML5: <!ELEMENT> not supported.
         $self->{state} = MD_ELEMENT_STATE;
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6045,29 +5620,31 @@ sub _get_next_token ($) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bogus comment',
                         line => $self->{line_prev},
                         column => $self->{column_prev} - 2
-                            + 1 * ($self->{nc} == -1));
+                            + 1 * ($nc == -1));
         ## Reconsume.
         $self->{state} = BOGUS_COMMENT_STATE;
         $self->{ct} = {type => COMMENT_TOKEN, data => ''}; ## Will be discarded
         redo A;
       }
-    } elsif ($self->{state} == MD_ENTITY_STATE) {
-      if ($self->{nc} == [
+    } elsif ($state == MD_ENTITY_STATE) {
+      if ($nc == [
             undef,
             undef,
             0x0054, # T
             0x0049, # I
             0x0054, # T
+            NEVER_CHAR, # (Y)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
             undef,
             undef,
             0x0074, # t
             0x0069, # i
             0x0074, # t
+            NEVER_CHAR, # (y)
           ]->[length $self->{kwd}]) {
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6081,9 +5658,9 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 5 and
-               ($self->{nc} == 0x0059 or # Y
-                $self->{nc} == 0x0079)) { # y
-        if ($self->{kwd} ne 'ENTIT' or $self->{nc} == 0x0079) {
+               ($nc == 0x0059 or # Y
+                $nc == 0x0079)) { # y
+        if ($self->{kwd} ne 'ENTIT' or $nc == 0x0079) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
                           text => 'ENTITY',
                           line => $self->{line_prev},
@@ -6110,31 +5687,33 @@ sub _get_next_token ($) {
                         line => $self->{line_prev},
                         column => $self->{column_prev} - 1
                             - (length $self->{kwd})
-                            + 1 * ($self->{nc} == -1));
+                            + 1 * ($nc == -1));
         $self->{state} = BOGUS_COMMENT_STATE;
         ## Reconsume.
         $self->{ct} = {type => COMMENT_TOKEN, data => ''}; ## Will be discarded
         redo A;
       }
-    } elsif ($self->{state} == MD_ELEMENT_STATE) {
-      if ($self->{nc} == [
+    } elsif ($state == MD_ELEMENT_STATE) {
+      if ($nc == [
            undef,
            undef,
            0x0045, # E
            0x004D, # M
            0x0045, # E
            0x004E, # N
+           NEVER_CHAR, # (T)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
            undef,
            undef,
            0x0065, # e
            0x006D, # m
            0x0065, # e
            0x006E, # n
+           NEVER_CHAR, # (t)
           ]->[length $self->{kwd}]) {
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6148,9 +5727,9 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 6 and
-               ($self->{nc} == 0x0054 or # T
-                $self->{nc} == 0x0074)) { # t
-        if ($self->{kwd} ne 'ELEMEN' or $self->{nc} == 0x0074) {
+               ($nc == 0x0054 or # T
+                $nc == 0x0074)) { # t
+        if ($self->{kwd} ne 'ELEMEN' or $nc == 0x0074) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
                           text => 'ELEMENT',
                           line => $self->{line_prev},
@@ -6177,31 +5756,33 @@ sub _get_next_token ($) {
                         line => $self->{line_prev},
                         column => $self->{column_prev} - 1
                             - (length $self->{kwd})
-                            + 1 * ($self->{nc} == -1));
+                            + 1 * ($nc == -1));
         $self->{state} = BOGUS_COMMENT_STATE;
         ## Reconsume.
         $self->{ct} = {type => COMMENT_TOKEN, data => ''}; ## Will be discarded
         redo A;
       }
-    } elsif ($self->{state} == MD_ATTLIST_STATE) {
-      if ($self->{nc} == [
+    } elsif ($state == MD_ATTLIST_STATE) {
+      if ($nc == [
            undef,
            0x0054, # T
            0x0054, # T
            0x004C, # L
            0x0049, # I
            0x0053, # S
+           NEVER_CHAR, # (T)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
            undef,
            0x0074, # t
            0x0074, # t
            0x006C, # l
            0x0069, # i
            0x0073, # s
+           NEVER_CHAR, # (t)
           ]->[length $self->{kwd}]) {
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6215,9 +5796,9 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 6 and
-               ($self->{nc} == 0x0054 or # T
-                $self->{nc} == 0x0074)) { # t
-        if ($self->{kwd} ne 'ATTLIS' or $self->{nc} == 0x0074) {
+               ($nc == 0x0054 or # T
+                $nc == 0x0074)) { # t
+        if ($self->{kwd} ne 'ATTLIS' or $nc == 0x0074) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
                           text => 'ATTLIST',
                           line => $self->{line_prev},
@@ -6245,14 +5826,14 @@ sub _get_next_token ($) {
                         line => $self->{line_prev},
                         column => $self->{column_prev} - 1
                              - (length $self->{kwd})
-                             + 1 * ($self->{nc} == -1));
+                             + 1 * ($nc == -1));
         $self->{state} = BOGUS_COMMENT_STATE;
         ## Reconsume.
         $self->{ct} = {type => COMMENT_TOKEN, data => ''}; ## Will be discarded
         redo A;
       }
-    } elsif ($self->{state} == MD_NOTATION_STATE) {
-      if ($self->{nc} == [
+    } elsif ($state == MD_NOTATION_STATE) {
+      if ($nc == [
            undef,
            0x004F, # O
            0x0054, # T
@@ -6260,8 +5841,9 @@ sub _get_next_token ($) {
            0x0054, # T
            0x0049, # I
            0x004F, # O
+           NEVER_CHAR, # (N)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
            undef,
            0x006F, # o
            0x0074, # t
@@ -6269,9 +5851,10 @@ sub _get_next_token ($) {
            0x0074, # t
            0x0069, # i
            0x006F, # o
+           NEVER_CHAR, # (n)
           ]->[length $self->{kwd}]) {
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -6285,9 +5868,9 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 7 and
-               ($self->{nc} == 0x004E or # N
-                $self->{nc} == 0x006E)) { # n
-        if ($self->{kwd} ne 'NOTATIO' or $self->{nc} == 0x006E) {
+               ($nc == 0x004E or # N
+                $nc == 0x006E)) { # n
+        if ($self->{kwd} ne 'NOTATIO' or $nc == 0x006E) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
                           text => 'NOTATION',
                           line => $self->{line_prev},
@@ -6314,17 +5897,17 @@ sub _get_next_token ($) {
                         line => $self->{line_prev},
                         column => $self->{column_prev} - 1
                             - (length $self->{kwd})
-                            + 1 * ($self->{nc} == -1));
+                            + 1 * ($nc == -1));
         $self->{state} = BOGUS_COMMENT_STATE;
         ## Reconsume.
         $self->{ct} = {type => COMMENT_TOKEN, data => ''}; ## Will be discarded
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_MD_STATE) {
+    } elsif ($state == DOCTYPE_MD_STATE) {
       ## XML5: "DOCTYPE ENTITY state", "DOCTYPE ATTLIST state", and
       ## "DOCTYPE NOTATION state".
 
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         ## XML5: [NOTATION] Switch to the "DOCTYPE NOTATION identifier state".
         $self->{state} = BEFORE_MD_NAME_STATE;
         
@@ -6340,7 +5923,7 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ($self->{ct}->{type} == GENERAL_ENTITY_TOKEN and 
-               $self->{nc} == 0x0025) { # %
+               $nc == 0x0025) { # %
         ## XML5: Switch to the "DOCTYPE bogus comment state".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before md name'); ## TODO: type
         $self->{state} = DOCTYPE_ENTITY_PARAMETER_BEFORE_STATE;
@@ -6356,12 +5939,12 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
         ## Reconsume.
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Switch to the "DOCTYPE bogus comment state".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no md name'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -6383,11 +5966,11 @@ sub _get_next_token ($) {
         $self->{state} = BEFORE_MD_NAME_STATE;
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_MD_NAME_STATE) {
+    } elsif ($state == BEFORE_MD_NAME_STATE) {
       ## XML5: "DOCTYPE ENTITY parameter state", "DOCTYPE ENTITY type
       ## before state", "DOCTYPE ATTLIST name before state".
 
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6402,7 +5985,7 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ($self->{ct}->{type} == GENERAL_ENTITY_TOKEN and 
-               $self->{nc} == 0x0025) { # %
+               $nc == 0x0025) { # %
         $self->{state} = DOCTYPE_ENTITY_PARAMETER_BEFORE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6416,7 +5999,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "Anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no md name'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -6432,14 +6015,14 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
         ## Reconsume.
         redo A;
       } else {
         ## XML5: [ATTLIST] Not defined yet.
-        $self->{ct}->{name} .= chr $self->{nc};
+        $self->{ct}->{name} .= chr $nc;
         $self->{state} = MD_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6454,8 +6037,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ENTITY_PARAMETER_BEFORE_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ENTITY_PARAMETER_BEFORE_STATE) {
+      if ($is_space->{$nc}) {
         ## XML5: Switch to the "DOCTYPE ENTITY parameter state".
         $self->{ct}->{type} = PARAMETER_ENTITY_TOKEN;
         $self->{state} = BEFORE_MD_NAME_STATE;
@@ -6471,7 +6054,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "Anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no md name'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -6487,7 +6070,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md');
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
         ## Reconsume.
@@ -6500,10 +6083,10 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == MD_NAME_STATE) {
+    } elsif ($state == MD_NAME_STATE) {
       ## XML5: "DOCTYPE ENTITY name state" and "DOCTYPE ATTLIST name state".
       
-      if ($is_space->{$self->{nc}}) {
+      if ($is_space->{$nc}) {
         if ($self->{ct}->{type} == ATTLIST_TOKEN) {
           $self->{state} = DOCTYPE_ATTLIST_NAME_AFTER_STATE;
         } elsif ($self->{ct}->{type} == ELEMENT_TOKEN) {
@@ -6523,7 +6106,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         if ($self->{ct}->{type} == ATTLIST_TOKEN) {
           #
         } else {
@@ -6543,7 +6126,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT/ENTITY/ATTLIST/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: [ATTLIST] No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md');
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -6552,7 +6135,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: [ATTLIST] Not defined yet.
-        $self->{ct}->{name} .= chr $self->{nc};
+        $self->{ct}->{name} .= chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6567,8 +6150,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_NAME_AFTER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_NAME_AFTER_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6582,7 +6165,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6597,7 +6180,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -6605,7 +6188,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: Not defined yet.
-        $self->{ca} = {name => chr ($self->{nc}), # attrdef
+        $self->{ca} = {name => chr ($nc), # attrdef
                        tokens => [],
                        line => $self->{line}, column => $self->{column}};
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_NAME_STATE;
@@ -6622,8 +6205,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_NAME_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_NAME_AFTER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6637,7 +6220,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr type'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -6654,7 +6237,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == 0x0028) { # (
+      } elsif ($nc == 0x0028) { # (
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before paren'); ## TODO: type
         $self->{state} = BEFORE_ALLOWED_TOKEN_STATE;
@@ -6670,7 +6253,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -6689,7 +6272,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: Not defined yet.
-        $self->{ca}->{name} .= chr $self->{nc};
+        $self->{ca}->{name} .= chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6704,8 +6287,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_NAME_AFTER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_NAME_AFTER_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6719,7 +6302,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr type'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -6736,7 +6319,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == 0x0028) { # (
+      } elsif ($nc == 0x0028) { # (
         ## XML5: Same as "anything else".
         $self->{state} = BEFORE_ALLOWED_TOKEN_STATE;
         
@@ -6751,7 +6334,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -6770,7 +6353,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: Not defined yet.
-        $self->{ca}->{type} = chr $self->{nc};
+        $self->{ca}->{type} = chr $nc;
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_TYPE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6785,8 +6368,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_TYPE_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_TYPE_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_TYPE_AFTER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6800,7 +6383,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0023) { # #
+      } elsif ($nc == 0x0023) { # #
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_BEFORE_STATE;
@@ -6816,7 +6399,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{ca}->{value} = '';
@@ -6833,7 +6416,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{ca}->{value} = '';
@@ -6850,7 +6433,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr default'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -6867,7 +6450,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == 0x0028) { # (
+      } elsif ($nc == 0x0028) { # (
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before paren'); ## TODO: type
         $self->{state} = BEFORE_ALLOWED_TOKEN_STATE;
@@ -6883,7 +6466,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -6902,7 +6485,7 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: Not defined yet.
-        $self->{ca}->{type} .= chr $self->{nc};
+        $self->{ca}->{type} .= chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6917,8 +6500,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_TYPE_AFTER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_TYPE_AFTER_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6932,7 +6515,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0028) { # (
+      } elsif ($nc == 0x0028) { # (
         ## XML5: Same as "anything else".
         $self->{state} = BEFORE_ALLOWED_TOKEN_STATE;
         
@@ -6947,7 +6530,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0023) { # #
+      } elsif ($nc == 0x0023) { # #
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_BEFORE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6961,7 +6544,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         ## XML5: Same as "anything else".
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
@@ -6977,7 +6560,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         ## XML5: Same as "anything else".
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
@@ -6993,7 +6576,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr default'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -7010,7 +6593,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -7035,8 +6618,8 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_ALLOWED_TOKEN_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == BEFORE_ALLOWED_TOKEN_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7050,7 +6633,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x007C) { # |
+      } elsif ($nc == 0x007C) { # |
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty allowed token'); ## TODO: type
         ## Stay in the state.
         
@@ -7065,7 +6648,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty allowed token'); ## TODO: type
         $self->{state} = AFTER_ALLOWED_TOKENS_STATE;
         
@@ -7080,7 +6663,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed allowed tokens'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7096,7 +6679,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -7114,7 +6697,7 @@ sub _get_next_token ($) {
         return  ($self->{ct});
         redo A;
       } else {
-        push @{$self->{ca}->{tokens}}, chr $self->{nc};
+        push @{$self->{ca}->{tokens}}, chr $nc;
         $self->{state} = ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7129,8 +6712,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == ALLOWED_TOKEN_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == ALLOWED_TOKEN_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = AFTER_ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7144,7 +6727,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x007C) { # |
+      } elsif ($nc == 0x007C) { # |
         $self->{state} = BEFORE_ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7158,7 +6741,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         $self->{state} = AFTER_ALLOWED_TOKENS_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7172,7 +6755,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed allowed tokens'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7188,7 +6771,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -7206,7 +6789,7 @@ sub _get_next_token ($) {
         return  ($self->{ct});
         redo A;
       } else {
-        $self->{ca}->{tokens}->[-1] .= chr $self->{nc};
+        $self->{ca}->{tokens}->[-1] .= chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7221,8 +6804,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_ALLOWED_TOKEN_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_ALLOWED_TOKEN_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7236,7 +6819,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x007C) { # |
+      } elsif ($nc == 0x007C) { # |
         $self->{state} = BEFORE_ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7250,7 +6833,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         $self->{state} = AFTER_ALLOWED_TOKENS_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7264,7 +6847,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed allowed tokens'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7280,7 +6863,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -7301,7 +6884,7 @@ sub _get_next_token ($) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'space in allowed token', ## TODO: type
                         line => $self->{line_prev},
                         column => $self->{column_prev});
-        $self->{ca}->{tokens}->[-1] .= ' ' . chr $self->{nc};
+        $self->{ca}->{tokens}->[-1] .= ' ' . chr $nc;
         $self->{state} = ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7316,8 +6899,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_ALLOWED_TOKENS_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_ALLOWED_TOKENS_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = BEFORE_ATTR_DEFAULT_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7331,7 +6914,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0023) { # #
+      } elsif ($nc == 0x0023) { # #
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_BEFORE_STATE;
         
@@ -7346,7 +6929,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
@@ -7362,7 +6945,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
@@ -7378,7 +6961,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr default'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7394,7 +6977,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7416,8 +6999,8 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_ATTR_DEFAULT_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == BEFORE_ATTR_DEFAULT_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7431,7 +7014,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0023) { # #
+      } elsif ($nc == 0x0023) { # #
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_BEFORE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7445,7 +7028,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
         
@@ -7460,7 +7043,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
         
@@ -7475,7 +7058,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr default'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7491,7 +7074,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7513,14 +7096,14 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_BEFORE_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_BEFORE_STATE) {
+      if ($is_space->{$nc}) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no default type'); ## TODO: type
         $self->{state} = BOGUS_MD_STATE;
         ## Reconsume.
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         ## XML5: Same as "anything else".
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
@@ -7536,7 +7119,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         ## XML5: Same as "anything else".
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
@@ -7552,7 +7135,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no attr default'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -7569,7 +7152,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE; ## XML5: "Data state".
@@ -7587,7 +7170,7 @@ sub _get_next_token ($) {
         return  ($self->{ct});
         redo A;
       } else {
-        $self->{ca}->{default} = chr $self->{nc};
+        $self->{ca}->{default} = chr $nc;
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7602,8 +7185,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_AFTER_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7617,7 +7200,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{ca}->{value} = '';
@@ -7634,7 +7217,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         ## XML5: Same as "anything else".
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no space before default value'); ## TODO: type
         $self->{ca}->{value} = '';
@@ -7651,7 +7234,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         ## XML5: Same as "anything else".
         push @{$self->{ct}->{attrdefs}}, $self->{ca};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -7668,7 +7251,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         push @{$self->{ct}->{attrdefs}}, $self->{ca};
@@ -7687,7 +7270,7 @@ sub _get_next_token ($) {
         return  ($self->{ct});
         redo A;
       } else {
-        $self->{ca}->{default} .= chr $self->{nc};
+        $self->{ca}->{default} .= chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7702,8 +7285,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_AFTER_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == DOCTYPE_ATTLIST_ATTRIBUTE_DECLARATION_AFTER_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7717,7 +7300,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0022) { # "
+      } elsif ($nc == 0x0022) { # "
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
         
@@ -7732,7 +7315,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0027) { # '
+      } elsif ($nc == 0x0027) { # '
         $self->{ca}->{value} = '';
         $self->{state} = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
         
@@ -7747,7 +7330,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         push @{$self->{ct}->{attrdefs}}, $self->{ca};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7763,7 +7346,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         ## XML5: No parse error.
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         push @{$self->{ct}->{attrdefs}}, $self->{ca};
@@ -7792,10 +7375,10 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == AFTER_ATTLIST_ATTR_VALUE_QUOTED_STATE) {
-      if ($is_space->{$self->{nc}} or
-          $self->{nc} == -1 or
-          $self->{nc} == 0x003E) { # >
+    } elsif ($state == AFTER_ATTLIST_ATTR_VALUE_QUOTED_STATE) {
+      if ($is_space->{$nc} or
+          $nc == -1 or
+          $nc == 0x003E) { # >
         $self->{state} = DOCTYPE_ATTLIST_NAME_AFTER_STATE;
         ## Reconsume.
         redo A;
@@ -7805,23 +7388,25 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == NDATA_STATE) {
+    } elsif ($state == NDATA_STATE) {
       ## ASCII case-insensitive
-      if ($self->{nc} == [
+      if ($nc == [
             undef, 
             0x0044, # D
             0x0041, # A
             0x0054, # T
+            NEVER_CHAR, # (A)
           ]->[length $self->{kwd}] or
-          $self->{nc} == [
+          $nc == [
             undef, 
             0x0064, # d
             0x0061, # a
             0x0074, # t
+            NEVER_CHAR, # (a)
           ]->[length $self->{kwd}]) {
         
         ## Stay in the state.
-        $self->{kwd} .= chr $self->{nc};
+        $self->{kwd} .= chr $nc;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -7835,9 +7420,9 @@ sub _get_next_token ($) {
   
         redo A;
       } elsif ((length $self->{kwd}) == 4 and
-               ($self->{nc} == 0x0041 or # A
-                $self->{nc} == 0x0061)) { # a
-        if ($self->{kwd} ne 'NDAT' or $self->{nc} == 0x0061) { # a
+               ($nc == 0x0041 or # A
+                $nc == 0x0061)) { # a
+        if ($self->{kwd} ne 'NDAT' or $nc == 0x0061) { # a
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'lowercase keyword', ## TODO: type
                           text => 'NDATA',
@@ -7869,8 +7454,8 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == AFTER_NDATA_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_NDATA_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = BEFORE_NOTATION_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7884,7 +7469,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no notation name'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7900,7 +7485,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ENTITY
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7925,8 +7510,8 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == BEFORE_NOTATION_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == BEFORE_NOTATION_NAME_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7940,7 +7525,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no notation name'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7956,7 +7541,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ENTITY
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -7973,7 +7558,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # ENTITY
         redo A;
       } else {
-        $self->{ct}->{notation} = chr $self->{nc}; # ENTITY
+        $self->{ct}->{notation} = chr $nc; # ENTITY
         $self->{state} = NOTATION_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7988,8 +7573,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == NOTATION_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == NOTATION_NAME_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = AFTER_MD_DEF_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8003,7 +7588,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8018,7 +7603,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ENTITY
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -8035,7 +7620,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # ENTITY
         redo A;
       } else {
-        $self->{ct}->{notation} .= chr $self->{nc}; # ENTITY
+        $self->{ct}->{notation} .= chr $nc; # ENTITY
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8050,8 +7635,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ENTITY_VALUE_DOUBLE_QUOTED_STATE) {
-      if ($self->{nc} == 0x0022) { # "
+    } elsif ($state == DOCTYPE_ENTITY_VALUE_DOUBLE_QUOTED_STATE) {
+      if ($nc == 0x0022) { # "
         $self->{state} = AFTER_MD_DEF_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8065,8 +7650,8 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0026) { # &
-        $self->{prev_state} = $self->{state};
+      } elsif ($nc == 0x0026) { # &
+        $self->{prev_state} = $state;
         $self->{state} = ENTITY_VALUE_ENTITY_STATE;
         $self->{entity_add} = 0x0022; # "
         
@@ -8082,14 +7667,14 @@ sub _get_next_token ($) {
   
         redo A;
 ## TODO: %
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed entity value'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         ## Reconsume.
         return  ($self->{ct}); # ENTITY
         redo A;
       } else {
-        $self->{ct}->{value} .= chr $self->{nc}; # ENTITY
+        $self->{ct}->{value} .= chr $nc; # ENTITY
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -8103,8 +7688,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == DOCTYPE_ENTITY_VALUE_SINGLE_QUOTED_STATE) {
-      if ($self->{nc} == 0x0027) { # '
+    } elsif ($state == DOCTYPE_ENTITY_VALUE_SINGLE_QUOTED_STATE) {
+      if ($nc == 0x0027) { # '
         $self->{state} = AFTER_MD_DEF_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8118,8 +7703,8 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0026) { # &
-        $self->{prev_state} = $self->{state};
+      } elsif ($nc == 0x0026) { # &
+        $self->{prev_state} = $state;
         $self->{state} = ENTITY_VALUE_ENTITY_STATE;
         $self->{entity_add} = 0x0027; # '
         
@@ -8135,14 +7720,14 @@ sub _get_next_token ($) {
   
         redo A;
 ## TODO: %
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed entity value'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         ## Reconsume.
         return  ($self->{ct}); # ENTITY
         redo A;
       } else {
-        $self->{ct}->{value} .= chr $self->{nc}; # ENTITY
+        $self->{ct}->{value} .= chr $nc; # ENTITY
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -8156,20 +7741,20 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == ENTITY_VALUE_ENTITY_STATE) {
-      if ($is_space->{$self->{nc}} or
+    } elsif ($state == ENTITY_VALUE_ENTITY_STATE) {
+      if ($is_space->{$nc} or
           {
             0x003C => 1, 0x0026 => 1, -1 => 1, # <, &
             $self->{entity_add} => 1,
-          }->{$self->{nc}}) {
+          }->{$nc}) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bare ero',
                         line => $self->{line_prev},
                         column => $self->{column_prev}
-                            + ($self->{nc} == -1 ? 1 : 0));
+                            + ($nc == -1 ? 1 : 0));
         ## Don't consume
         ## Return nothing.
         #
-      } elsif ($self->{nc} == 0x0023) { # #
+      } elsif ($nc == 0x0023) { # #
         $self->{ca} = $self->{ct};
         $self->{state} = ENTITY_HASH_STATE;
         $self->{kwd} = '#';
@@ -8193,8 +7778,8 @@ sub _get_next_token ($) {
       $self->{state} = $self->{prev_state};
       ## Reconsume.
       redo A;
-    } elsif ($self->{state} == AFTER_ELEMENT_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_ELEMENT_NAME_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = BEFORE_ELEMENT_CONTENT_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8208,7 +7793,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0028) { # (
+      } elsif ($nc == 0x0028) { # (
         $self->{state} = AFTER_CM_GROUP_OPEN_STATE;
         $self->{ct}->{content} = ['('];
         $self->{group_depth} = 1;
@@ -8224,7 +7809,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'no md def'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -8240,7 +7825,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -8257,7 +7842,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # ELEMENT
         redo A;
       } else {
-        $self->{ct}->{content} = [chr $self->{nc}];
+        $self->{ct}->{content} = [chr $nc];
         $self->{state} = CONTENT_KEYWORD_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8272,8 +7857,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == CONTENT_KEYWORD_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == CONTENT_KEYWORD_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = AFTER_MD_DEF_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8287,7 +7872,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8302,7 +7887,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -8319,7 +7904,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # ELEMENT
         redo A;
       } else {
-        $self->{ct}->{content}->[-1] .= chr $self->{nc}; # ELEMENT
+        $self->{ct}->{content}->[-1] .= chr $nc; # ELEMENT
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8334,8 +7919,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_CM_GROUP_OPEN_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_CM_GROUP_OPEN_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8349,9 +7934,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0028) { # (
+      } elsif ($nc == 0x0028) { # (
         $self->{group_depth}++;
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+        push @{$self->{ct}->{content}}, chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8365,8 +7950,8 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x007C or # |
-               $self->{nc} == 0x002C) { # ,
+      } elsif ($nc == 0x007C or # |
+               $nc == 0x002C) { # ,
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty element name'); ## TODO: type
         ## Stay in the state.
         
@@ -8381,9 +7966,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'empty element name'); ## TODO: type
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+        push @{$self->{ct}->{content}}, chr $nc;
         $self->{group_depth}--;
         $self->{state} = AFTER_CM_GROUP_CLOSE_STATE;
         
@@ -8398,7 +7983,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed cm group'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8415,7 +8000,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8433,7 +8018,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # ELEMENT
         redo A;
       } else {
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+        push @{$self->{ct}->{content}}, chr $nc;
         $self->{state} = CM_ELEMENT_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8448,8 +8033,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == CM_ELEMENT_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == CM_ELEMENT_NAME_STATE) {
+      if ($is_space->{$nc}) {
         $self->{state} = AFTER_CM_ELEMENT_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8463,10 +8048,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x002A or # *
-               $self->{nc} == 0x002B or # +
-               $self->{nc} == 0x003F) { # ?
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+      } elsif ($nc == 0x002A or # *
+               $nc == 0x002B or # +
+               $nc == 0x003F) { # ?
+        push @{$self->{ct}->{content}}, chr $nc;
         $self->{state} = AFTER_CM_ELEMENT_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8480,9 +8065,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x007C or # |
-               $self->{nc} == 0x002C) { # ,
-        push @{$self->{ct}->{content}}, $self->{nc} == 0x007C ? ' | ' : ', ';
+      } elsif ($nc == 0x007C or # |
+               $nc == 0x002C) { # ,
+        push @{$self->{ct}->{content}}, $nc == 0x007C ? ' | ' : ', ';
         $self->{state} = AFTER_CM_GROUP_OPEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8496,9 +8081,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         $self->{group_depth}--;
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+        push @{$self->{ct}->{content}}, chr $nc;
         $self->{state} = AFTER_CM_GROUP_CLOSE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8512,7 +8097,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed cm group'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8529,7 +8114,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8547,7 +8132,7 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # ELEMENT
         redo A;
       } else {
-        $self->{ct}->{content}->[-1] .= chr $self->{nc};
+        $self->{ct}->{content}->[-1] .= chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8562,8 +8147,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_CM_ELEMENT_NAME_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_CM_ELEMENT_NAME_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8577,9 +8162,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x007C or # |
-               $self->{nc} == 0x002C) { # ,
-        push @{$self->{ct}->{content}}, $self->{nc} == 0x007C ? ' | ' : ', ';
+      } elsif ($nc == 0x007C or # |
+               $nc == 0x002C) { # ,
+        push @{$self->{ct}->{content}}, $nc == 0x007C ? ' | ' : ', ';
         $self->{state} = AFTER_CM_GROUP_OPEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8593,9 +8178,9 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         $self->{group_depth}--;
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+        push @{$self->{ct}->{content}}, chr $nc;
         $self->{state} = AFTER_CM_GROUP_CLOSE_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8609,7 +8194,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed cm group'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8626,7 +8211,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8660,8 +8245,8 @@ sub _get_next_token ($) {
   
         redo A;
       }
-    } elsif ($self->{state} == AFTER_CM_GROUP_CLOSE_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_CM_GROUP_CLOSE_STATE) {
+      if ($is_space->{$nc}) {
         if ($self->{group_depth}) {
           $self->{state} = AFTER_CM_ELEMENT_NAME_STATE;
         } else {
@@ -8679,10 +8264,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x002A or # *
-               $self->{nc} == 0x002B or # +
-               $self->{nc} == 0x003F) { # ?
-        push @{$self->{ct}->{content}}, chr $self->{nc};
+      } elsif ($nc == 0x002A or # *
+               $nc == 0x002B or # +
+               $nc == 0x003F) { # ?
+        push @{$self->{ct}->{content}}, chr $nc;
         if ($self->{group_depth}) {
           $self->{state} = AFTER_CM_ELEMENT_NAME_STATE;
         } else {
@@ -8700,10 +8285,10 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x0029) { # )
+      } elsif ($nc == 0x0029) { # )
         if ($self->{group_depth}) {
           $self->{group_depth}--;
-          push @{$self->{ct}->{content}}, chr $self->{nc};
+          push @{$self->{ct}->{content}}, chr $nc;
           ## Stay in the state.
           
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8723,7 +8308,7 @@ sub _get_next_token ($) {
           ## Reconsume.
           redo A;
         }
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         if ($self->{group_depth}) {
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed cm group'); ## TODO: type
           push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
@@ -8742,7 +8327,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         push @{$self->{ct}->{content}}, (')') x $self->{group_depth};
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
@@ -8769,8 +8354,8 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == AFTER_MD_DEF_STATE) {
-      if ($is_space->{$self->{nc}}) {
+    } elsif ($state == AFTER_MD_DEF_STATE) {
+      if ($is_space->{$nc}) {
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8784,7 +8369,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ($self->{nc} == 0x003E) { # >
+      } elsif ($nc == 0x003E) { # >
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8799,7 +8384,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ENTITY/ELEMENT
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'unclosed md'); ## TODO: type
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
@@ -8821,8 +8406,8 @@ sub _get_next_token ($) {
         ## Reconsume.
         redo A;
       }
-    } elsif ($self->{state} == BOGUS_MD_STATE) {
-      if ($self->{nc} == 0x003E) { # >
+    } elsif ($state == BOGUS_MD_STATE) {
+      if ($nc == 0x003E) { # >
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8837,7 +8422,7 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # ATTLIST/ENTITY/NOTATION
         redo A;
-      } elsif ($self->{nc} == -1) {
+      } elsif ($nc == -1) {
         $self->{state} = DOCTYPE_INTERNAL_SUBSET_STATE;
         ## Reconsume.
         return  ($self->{ct}); # ATTLIST/ENTITY/NOTATION
@@ -8858,7 +8443,7 @@ sub _get_next_token ($) {
         redo A;
       }
     } else {
-      die "$0: $self->{state}: Unknown state";
+      die "$0: $state: Unknown state";
     }
   } # A   
 
@@ -8866,5 +8451,3 @@ sub _get_next_token ($) {
 } # _get_next_token
 
 1;
-## $Date: 2009/09/05 11:31:58 $
-                                
