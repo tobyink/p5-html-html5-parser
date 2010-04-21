@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 package HTML::HTML5::Parser::Charset::WebThai;
 use strict;
-our $VERSION='0.03';
+our $VERSION='0.04';
 
 ## NOTE: This module does not expect that its standalone uses.
 ## See Message::Charset::Info for how it is used.

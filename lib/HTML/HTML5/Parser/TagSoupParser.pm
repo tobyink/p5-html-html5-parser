@@ -3,7 +3,7 @@ package HTML::HTML5::Parser::TagSoupParser;
 # This is a port of the Whatpm::HTML package away from dependencies
 # on manakai, and towards CPAN and XML::LibXML.
 
-# caught up to Whatpm::HTML rv f4c911f9e79aa2651b6c0d64d8060907130b4ed5.
+# caught up to Whatpm::HTML rv cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc.
 
 use 5.008001;
 use strict;
@@ -51,12 +51,12 @@ require IO::Handle;
 
 ## Namespace URLs
 
-my $HTML_NS = q<http://www.w3.org/1999/xhtml>;
-my $MML_NS = q<http://www.w3.org/1998/Math/MathML>;
-my $SVG_NS = q<http://www.w3.org/2000/svg>;
-my $XLINK_NS = q<http://www.w3.org/1999/xlink>;
-my $XML_NS = q<http://www.w3.org/XML/1998/namespace>;
-my $XMLNS_NS = q<http://www.w3.org/2000/xmlns/>;
+sub HTML_NS ()  { q<http://www.w3.org/1999/xhtml> }
+sub MML_NS ()   { q<http://www.w3.org/1998/Math/MathML> }
+sub SVG_NS ()   { q<http://www.w3.org/2000/svg> }
+sub XLINK_NS () { q<http://www.w3.org/1999/xlink> }
+sub XML_NS ()   { q<http://www.w3.org/XML/1998/namespace> }
+sub XMLNS_NS () { q<http://www.w3.org/2000/xmlns/> }
 
 ## Element categories
 
@@ -196,7 +196,7 @@ my $el_category = {
   col => MISC_SPECIAL_EL,
   colgroup => MISC_SPECIAL_EL,
   command => MISC_SPECIAL_EL,
-  datagrid => MISC_SPECIAL_EL,
+  #datagrid => MISC_SPECIAL_EL,
   dd => DTDD_EL,
   details => MISC_SPECIAL_EL,
   dir => MISC_SPECIAL_EL,
@@ -278,7 +278,7 @@ my $el_category = {
 };
 
 my $el_category_f = {
-  $MML_NS => {
+  (MML_NS) => {
     'annotation-xml' => MML_AXML_EL,
     mi => FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
     mo => FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
@@ -286,7 +286,7 @@ my $el_category_f = {
     ms => FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
     mtext => FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
   },
-  $SVG_NS => {
+  (SVG_NS) => {
     foreignObject => SCOPING_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
     desc => FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
     title => FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
@@ -360,21 +360,19 @@ my $svg_attr_name = {
 };
 
 my $foreign_attr_xname = {
-  'xlink:actuate' => [$XLINK_NS, ['xlink', 'actuate']],
-  'xlink:arcrole' => [$XLINK_NS, ['xlink', 'arcrole']],
-  'xlink:href' => [$XLINK_NS, ['xlink', 'href']],
-  'xlink:role' => [$XLINK_NS, ['xlink', 'role']],
-  'xlink:show' => [$XLINK_NS, ['xlink', 'show']],
-  'xlink:title' => [$XLINK_NS, ['xlink', 'title']],
-  'xlink:type' => [$XLINK_NS, ['xlink', 'type']],
-  'xml:base' => [$XML_NS, ['xml', 'base']],
-  'xml:lang' => [$XML_NS, ['xml', 'lang']],
-  'xml:space' => [$XML_NS, ['xml', 'space']],
-  'xmlns' => [$XMLNS_NS, [undef, 'xmlns']],
-  'xmlns:xlink' => [$XMLNS_NS, ['xmlns', 'xlink']],
+  'xlink:actuate' => [(XLINK_NS), ['xlink', 'actuate']],
+  'xlink:arcrole' => [(XLINK_NS), ['xlink', 'arcrole']],
+  'xlink:href' => [(XLINK_NS), ['xlink', 'href']],
+  'xlink:role' => [(XLINK_NS), ['xlink', 'role']],
+  'xlink:show' => [(XLINK_NS), ['xlink', 'show']],
+  'xlink:title' => [(XLINK_NS), ['xlink', 'title']],
+  'xlink:type' => [(XLINK_NS), ['xlink', 'type']],
+  'xml:base' => [(XML_NS), ['xml', 'base']],
+  'xml:lang' => [(XML_NS), ['xml', 'lang']],
+  'xml:space' => [(XML_NS), ['xml', 'space']],
+  'xmlns' => [(XMLNS_NS), [undef, 'xmlns']],
+  'xmlns:xlink' => [(XMLNS_NS), ['xmlns', 'xlink']],
 };
-
-## ISSUE: xmlns:xlink="non-xlink-ns" is not an error.
 
 ## TODO: Invoke the reset algorithm when a resettable element is
 ## created (cf. HTML5 revision 2259).
@@ -825,7 +823,7 @@ sub new ($) {
     level => {
       must => 'm',
       should => 's',
-      obc => 's', ## Obsolete but conforming, # XXX distinguish from "should"
+      obsconforming => 's',
       warn => 'w',
       info => 'i',
       uncertain => 'u',
@@ -962,7 +960,6 @@ sub _tree_construction_initial ($) {
       my $doctype_name = $token->{name};
       $doctype_name = '' unless defined $doctype_name;
 
-      $doctype_name =~ tr/A-Z/a-z/; # ASCII case-insensitive.
       if ($doctype_name ne 'html') {
         
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'not HTML5', token => $token);
@@ -978,7 +975,7 @@ sub _tree_construction_initial ($) {
             (not defined $token->{sysid} or $token->{sysid} eq $xsysid)) {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'obs DOCTYPE', token => $token,
-                          level => $self->{level}->{obc}); ## XXX error type
+                          level => $self->{level}->{obsconforming});
         } else {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'not HTML5', token => $token);
@@ -1118,8 +1115,11 @@ sub _tree_construction_initial ($) {
               END_OF_FILE_TOKEN, 1,
              }->{$token->{type}}) {
       
-      $self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE', token => $token);
-      DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+		unless (DATA($self->{'document'}, 'manakai_is_srcdoc'))
+		{
+			$self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE', token => $token);
+			DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+		}
       ## Go to the "before html" insertion mode.
       ## reprocess
       
@@ -1203,7 +1203,7 @@ sub _tree_construction_root_element ($) {
         if ($token->{tag_name} eq 'html') {
           my $root_element;
           
-      $root_element = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $root_element = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{ $token->{attributes}}) {
           my $attr_t =  $token->{attributes}->{$attr_name};
@@ -1267,7 +1267,7 @@ sub _tree_construction_root_element ($) {
 
     my $root_element;
     
-      $root_element = $self->{document}->createElementNS($HTML_NS, 'html');
+      $root_element = $self->{document}->createElementNS((HTML_NS), 'html');
     
         DATA($root_element, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -1384,12 +1384,10 @@ sub _reset_insertion_mode ($) {
   if ($foreign) {
     $self->{insertion_mode} |= IN_FOREIGN_CONTENT_IM;
   }
-
-  die "$0: _reset_insertion_mode: This line should never be reached";
 } # _reset_insertion_mode
 
-  my $parse_rcdata = sub ($$$) {
-    my ($self, $insert, $parse_refs) = @_;
+  my $parse_rcdata = sub ($$$$) {
+    my ($self, $insert, $open_tables, $parse_refs) = @_;
 
     ## Step 1
     my $start_tag_name = $token->{tag_name};
@@ -1397,7 +1395,7 @@ sub _reset_insertion_mode ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -1413,7 +1411,7 @@ sub _reset_insertion_mode ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -1433,13 +1431,13 @@ sub _reset_insertion_mode ($) {
     $token = $self->_get_next_token;
   }; # $parse_rcdata
 
-  my $script_start_tag = sub ($$) {
-    my ($self, $insert) = @_;
+  my $script_start_tag = sub ($$$) {
+    my ($self, $insert, $open_tables) = @_;
     
     ## Step 1
     my $script_el;
     
-      $script_el = $self->{document}->createElementNS($HTML_NS, 'script');
+      $script_el = $self->{document}->createElementNS((HTML_NS), 'script');
     
         for my $attr_name (keys %{ $token->{attributes}}) {
           my $attr_t =  $token->{attributes}->{$attr_name};
@@ -1463,7 +1461,7 @@ sub _reset_insertion_mode ($) {
     ## TODO: Mark as "already executed", if ...
 
     ## Step 4 (HTML5 revision 2702)
-    $insert->($script_el);
+    $insert->($self, $script_el, $open_tables);
     push @{$self->{open_elements}}, [$script_el, $el_category->{script}];
 
     ## Step 5
@@ -1622,7 +1620,7 @@ sub _reset_insertion_mode ($) {
           
           my $new_element = [];
           
-      $new_element->[0] = $self->{document}->createElementNS($HTML_NS, $node_token->{tag_name});
+      $new_element->[0] = $self->{document}->createElementNS((HTML_NS), $node_token->{tag_name});
     
         for my $attr_name (keys %{ $node_token->{attributes}}) {
           my $attr_t =  $node_token->{attributes}->{$attr_name};
@@ -1682,7 +1680,7 @@ sub _reset_insertion_mode ($) {
       ## Step 8
           my $new_element = [];
           
-      $new_element->[0] = $self->{document}->createElementNS($HTML_NS, $formatting_element->[2]->{tag_name});
+      $new_element->[0] = $self->{document}->createElementNS((HTML_NS), $formatting_element->[2]->{tag_name});
     
         for my $attr_name (keys %{ $formatting_element->[2]->{attributes}}) {
           my $attr_t =  $formatting_element->[2]->{attributes}->{$attr_name};
@@ -1741,8 +1739,8 @@ sub _reset_insertion_mode ($) {
     } # FET
   }; # $formatting_end_tag
 
-  my $reconstruct_active_formatting_elements = sub { # MUST
-    my ($self, $insert, $active_formatting_elements) = @_;
+  my $reconstruct_active_formatting_elements = sub ($$$$) { # MUST
+    my ($self, $insert, $active_formatting_elements, $open_tables) = @_;
 
     ## Step 1
     return unless @$active_formatting_elements;
@@ -1801,7 +1799,7 @@ sub _reset_insertion_mode ($) {
       my $clone = [$entry->[0]->cloneNode (0), $entry->[1]];
     
       ## Step 9
-      $insert->($clone->[0]);
+      $insert->($self, $clone->[0], $open_tables);
       push @{$self->{open_elements}}, $clone;
       
       ## Step 10
@@ -1821,16 +1819,8 @@ sub _reset_insertion_mode ($) {
     } # S7
   }; # $reconstruct_active_formatting_elements
 
-sub _tree_construction_main ($) {
-  my $self = shift;
-
-  ## "List of active formatting elements".  Each item in this array is
-  ## an array reference, which contains: [0] - the element node; [1] -
-  ## the local name of the element; [2] - the token that is used to
-  ## create [0].
-  my $active_formatting_elements = [];
-
-  my $clear_up_to_marker = sub {
+  my $clear_up_to_marker = sub ($) {
+	 my $active_formatting_elements = $_[0];
     for (reverse 0..$#$active_formatting_elements) {
       if ($active_formatting_elements->[$_]->[0] eq '#marker') {
         
@@ -1842,22 +1832,16 @@ sub _tree_construction_main ($) {
     
   }; # $clear_up_to_marker
 
-  my $insert;
-
-  ## NOTE: $open_tables->[-1]->[0] is the "current table" element node.
-  ## NOTE: $open_tables->[-1]->[1] is the "tainted" flag (OBSOLETE; unused).
-  ## NOTE: $open_tables->[-1]->[2] is set false when non-Text node inserted.
-  my $open_tables = [[$self->{open_elements}->[0]->[0]]];
-  
-  $insert = my $insert_to_current = sub {
-    $self->{open_elements}->[-1]->[0]->appendChild ($_[0]);
-  }; # $insert_to_current
+  my $insert_to_current = sub {
+    #my ($self, $child, $open_tables) = @_;
+    $_[0]->{open_elements}->[-1]->[0]->appendChild ($_[1]);
+ }; # insert_to_current
 
   ## Foster parenting.  Note that there are three "foster parenting"
   ## code in the parser: for elements (this one), for texts, and for
   ## elements in the AAA code.
   my $insert_to_foster = sub {
-    my $child = shift;
+    my ($self, $child, $open_tables) = @_;
     if ($self->{open_elements}->[-1]->[1] & TABLE_ROWS_EL) {
       # MUST
       my $foster_parent_element;
@@ -1889,6 +1873,24 @@ sub _tree_construction_main ($) {
       $self->{open_elements}->[-1]->[0]->appendChild ($child);
     }
   }; # $insert_to_foster
+
+sub _tree_construction_main ($) {
+  my $self = shift;
+
+  ## "List of active formatting elements".  Each item in this array is
+  ## an array reference, which contains: [0] - the element node; [1] -
+  ## the local name of the element; [2] - the token that is used to
+  ## create [0].
+  my $active_formatting_elements = [];
+
+  my $insert;
+
+  ## NOTE: $open_tables->[-1]->[0] is the "current table" element node.
+  ## NOTE: $open_tables->[-1]->[1] is the "tainted" flag (OBSOLETE; unused).
+  ## NOTE: $open_tables->[-1]->[2] is set false when non-Text node inserted.
+  my $open_tables = [[$self->{open_elements}->[0]->[0]]];
+
+  $insert = $insert_to_current;
 
   ## NOTE: Insert a character (MUST): When a character is inserted, if
   ## the last node that was inserted by the parser is a Text node and
@@ -1947,7 +1949,8 @@ sub _tree_construction_main ($) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'in table:#text', token => $token);
 
         ## NOTE: As if in body, but insert into the foster parent element.
-        $reconstruct_active_formatting_elements->($self, $insert_to_foster, $active_formatting_elements);
+        $reconstruct_active_formatting_elements
+			->($self, $insert_to_foster, $active_formatting_elements, $open_tables);
             
         if ($self->{open_elements}->[-1]->[1] & TABLE_ROWS_EL) {
           # MUST
@@ -2156,7 +2159,7 @@ sub _tree_construction_main ($) {
         } else {
           my $nsuri = $self->{open_elements}->[-1]->[0]->namespaceURI;
           my $tag_name = $token->{tag_name};
-          if ($nsuri eq $SVG_NS) {
+          if ($nsuri eq (SVG_NS)) {
             $tag_name = {
                altglyph => 'altGlyph',
                altglyphdef => 'altGlyphDef',
@@ -2218,18 +2221,18 @@ sub _tree_construction_main ($) {
 				 $qname =~ s/(^:)|(:$)//;
 				 $attr = $self->{document}->createAttributeNS($xmlnsuri, $qname);
 			 }
-			 elsif ($nsuri eq $MML_NS && $attr_name eq 'definitionurl')
+			 elsif ($nsuri eq (MML_NS) && $attr_name eq 'definitionurl')
 			 {
-				 $attr = $self->{document}->createAttributeNS($MML_NS, 'definitionURL');
+				 $attr = $self->{document}->createAttributeNS((MML_NS), 'definitionURL');
 			 }
-			 elsif ($nsuri eq $MML_NS )
+			 elsif ($nsuri eq (MML_NS) )
 			 {
-				 $attr = $self->{document}->createAttributeNS($MML_NS, $attr_name);
+				 $attr = $self->{document}->createAttributeNS((MML_NS), $attr_name);
 			 }
-			 elsif ($nsuri eq $SVG_NS )
+			 elsif ($nsuri eq (SVG_NS) )
 			 {
 				 $attr = $self->{document}->createAttributeNS(
-					$SVG_NS, ($svg_attr_name->{$attr_name} || $attr_name));
+					(SVG_NS), ($svg_attr_name->{$attr_name} || $attr_name));
 			 }
 			 unless ($attr)
 			 {
@@ -2253,7 +2256,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, ($el_category_f->{$nsuri}->{ $tag_name} || 0) | FOREIGN_EL];
 
       if ( $token->{attributes}->{xmlns} and  $token->{attributes}->{xmlns}->{value} ne ($nsuri)) {
@@ -2341,7 +2344,7 @@ sub _tree_construction_main ($) {
           
           ## As if <head>
           
-      $self->{head_element} = $self->{document}->createElementNS($HTML_NS, 'head');
+      $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
         DATA($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -2382,7 +2385,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, 'body');
+      $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -2402,7 +2405,7 @@ sub _tree_construction_main ($) {
           if ($self->{insertion_mode} == BEFORE_HEAD_IM) {
             
             
-      $self->{head_element} = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $self->{head_element} = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{ $token->{attributes}}) {
           my $attr_t =  $token->{attributes}->{$attr_name};
@@ -2446,7 +2449,7 @@ sub _tree_construction_main ($) {
           
           ## As if <head>
           
-      $self->{head_element} = $self->{document}->createElementNS($HTML_NS, 'head');
+      $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
         DATA($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -2492,7 +2495,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2534,7 +2537,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2571,7 +2574,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2620,7 +2623,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2713,7 +2716,7 @@ sub _tree_construction_main ($) {
           }
 
           ## NOTE: There is a "as if in head" code clone.
-          $parse_rcdata->($self, $insert, 1); # RCDATA
+          $parse_rcdata->($self, $insert, $open_tables, 1); # RCDATA
 
           ## NOTE: At this point the stack of open elements contain
           ## the |head| element (index == -2) and the |script| element
@@ -2740,8 +2743,7 @@ sub _tree_construction_main ($) {
           } else {
             
           }
-          $parse_rcdata->($self, $insert, 0); # RAWTEXT
-          ## ISSUE: A spec bug [Bug 6038]
+          $parse_rcdata->($self, $insert, $open_tables, 0); # RAWTEXT
           splice @{$self->{open_elements}}, -2, 1, () # <head>
               if ($self->{insertion_mode} & IM_MASK) == AFTER_HEAD_IM;
           next B;
@@ -2753,7 +2755,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2811,7 +2813,7 @@ sub _tree_construction_main ($) {
           }
 
           ## NOTE: There is a "as if in head" code clone.
-          $script_start_tag->($self, $insert);
+          $script_start_tag->($self, $insert, $open_tables);
           ## ISSUE: A spec bug  [Bug 6038]
           splice @{$self->{open_elements}}, -2, 1 # <head>
               if ($self->{insertion_mode} & IM_MASK) == AFTER_HEAD_IM;
@@ -2844,7 +2846,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -2910,7 +2912,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, 'body');
+      $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -2939,7 +2941,7 @@ sub _tree_construction_main ($) {
             
             ## As if <head>
             
-      $self->{head_element} = $self->{document}->createElementNS($HTML_NS, 'head');
+      $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
         DATA($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -2990,7 +2992,7 @@ sub _tree_construction_main ($) {
             
             ## (before head) as if <head>, (in head) as if </head>
             
-      $self->{head_element} = $self->{document}->createElementNS($HTML_NS, 'head');
+      $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
         DATA($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3036,7 +3038,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, 'body');
+      $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3066,7 +3068,7 @@ sub _tree_construction_main ($) {
 
           ## NOTE: As if <head>
           
-      $self->{head_element} = $self->{document}->createElementNS($HTML_NS, 'head');
+      $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
         DATA($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3121,7 +3123,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, 'body');
+      $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3142,7 +3144,8 @@ sub _tree_construction_main ($) {
     } elsif ($self->{insertion_mode} & BODY_IMS) {
       if ($token->{type} == CHARACTER_TOKEN) {
         
-        $reconstruct_active_formatting_elements->($self, $insert_to_current, $active_formatting_elements);
+        $reconstruct_active_formatting_elements
+			->($self, $insert_to_current, $active_formatting_elements, $open_tables);
         
         $self->{open_elements}->[-1]->[0]->appendText($token->{data});
 
@@ -3236,7 +3239,7 @@ sub _tree_construction_main ($) {
                 
                 splice @{$self->{open_elements}}, $i;
                 
-                $clear_up_to_marker->();
+                $clear_up_to_marker->($active_formatting_elements);
                 
                 $self->{insertion_mode} = IN_TABLE_IM;
                 
@@ -3296,7 +3299,7 @@ sub _tree_construction_main ($) {
                 
                 splice @{$self->{open_elements}}, $i;
                 
-                $clear_up_to_marker->();
+                $clear_up_to_marker->($active_formatting_elements);
                 
                 $self->{insertion_mode} = IN_ROW_IM;
                 
@@ -3356,7 +3359,7 @@ sub _tree_construction_main ($) {
                 
                 splice @{$self->{open_elements}}, $i;
                 
-                $clear_up_to_marker->();
+                $clear_up_to_marker->($active_formatting_elements);
                 
                 $self->{insertion_mode} = IN_TABLE_IM;
                 
@@ -3464,7 +3467,7 @@ sub _tree_construction_main ($) {
 
               splice @{$self->{open_elements}}, $i;
 
-              $clear_up_to_marker->();
+              $clear_up_to_marker->($active_formatting_elements);
 
               $self->{insertion_mode} = IN_TABLE_IM;
 
@@ -3534,7 +3537,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, 'tbody');
+      $el = $self->{document}->createElementNS((HTML_NS), 'tbody');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3570,7 +3573,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -3601,7 +3604,7 @@ sub _tree_construction_main ($) {
       my $el;
       
       $el = $self->{document}->createElementNS
-        ($HTML_NS, 'tr');
+        ((HTML_NS), 'tr');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3629,7 +3632,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -3769,7 +3772,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, 'colgroup');
+      $el = $self->{document}->createElementNS((HTML_NS), 'colgroup');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
@@ -3805,7 +3808,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -3899,13 +3902,13 @@ sub _tree_construction_main ($) {
         } elsif ($token->{tag_name} eq 'style') {
           
           ## NOTE: This is a "as if in head" code clone.
-          $parse_rcdata->($self, $insert, 0); # RAWTEXT
+          $parse_rcdata->($self, $insert, $open_tables, 0); # RAWTEXT
           $open_tables->[-1]->[2] = 0 if @$open_tables; # ~node inserted
           next B;
         } elsif ($token->{tag_name} eq 'script') {
           
           ## NOTE: This is a "as if in head" code clone.
-          $script_start_tag->($self, $insert);
+          $script_start_tag->($self, $insert, $open_tables);
           $open_tables->[-1]->[2] = 0 if @$open_tables; # ~node inserted
           next B;
         } elsif ($token->{tag_name} eq 'input') {
@@ -3921,7 +3924,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -3971,7 +3974,7 @@ sub _tree_construction_main ($) {
      {
        my $el;
        
-       $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+       $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
      
          for my $attr_name (keys %{  $token->{attributes}}) {
            my $attr_t =   $token->{attributes}->{$attr_name};
@@ -4326,7 +4329,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -4437,7 +4440,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -4481,7 +4484,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -4575,7 +4578,7 @@ sub _tree_construction_main ($) {
         } elsif ($token->{tag_name} eq 'script') {
           
           ## NOTE: This is an "as if in head" code clone
-          $script_start_tag->();
+          $script_start_tag->($self, $insert, $open_tables);
           next B;
         } else {
           
@@ -4743,7 +4746,8 @@ sub _tree_construction_main ($) {
         if ($token->{data} =~ s/^([\x09\x0A\x0C\x20]+)//) {
           my $data = $1;
           ## As if in body
-          $reconstruct_active_formatting_elements->($self, $insert_to_current, $active_formatting_elements);
+          $reconstruct_active_formatting_elements
+				->($self, $insert_to_current, $active_formatting_elements, $open_tables);
               
           $self->{open_elements}->[-1]->[0]->appendText ($1);
           
@@ -4874,7 +4878,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -4904,7 +4908,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -4931,7 +4935,7 @@ sub _tree_construction_main ($) {
         } elsif ($token->{tag_name} eq 'noframes') {
           
           ## NOTE: As if in head.
-          $parse_rcdata->($self, $insert, 0); # RAWTEXT
+          $parse_rcdata->($self, $insert, $open_tables, 0); # RAWTEXT
           next B;
 
           ## NOTE: |<!DOCTYPE HTML><frameset></frameset></html><noframes></noframes>|
@@ -5026,12 +5030,12 @@ sub _tree_construction_main ($) {
       if ($token->{tag_name} eq 'script') {
         
         ## NOTE: This is an "as if in head" code clone
-        $script_start_tag->($self, $insert);
+        $script_start_tag->($self, $insert, $open_tables);
         next B;
       } elsif ($token->{tag_name} eq 'style') {
         
         ## NOTE: This is an "as if in head" code clone
-        $parse_rcdata->($self, $insert, 0); # RAWTEXT
+        $parse_rcdata->($self, $insert, $open_tables, 0); # RAWTEXT
         next B;
       } elsif ({
                 base => 1, command => 1, link => 1,
@@ -5042,7 +5046,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5058,7 +5062,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5072,7 +5076,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5088,7 +5092,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5140,7 +5144,7 @@ sub _tree_construction_main ($) {
       } elsif ($token->{tag_name} eq 'title') {
         
         ## NOTE: This is an "as if in head" code clone
-        $parse_rcdata->($self, $insert, 1); # RCDATA
+        $parse_rcdata->($self, $insert, $open_tables, 1); # RCDATA
         next B;
       } elsif ($token->{tag_name} eq 'body') {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'in body', text => 'body', token => $token);
@@ -5189,7 +5193,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5205,7 +5209,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5287,7 +5291,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5303,7 +5307,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5452,7 +5456,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5468,7 +5472,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5560,7 +5564,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5576,7 +5580,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5608,7 +5612,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5624,7 +5628,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5673,13 +5677,13 @@ sub _tree_construction_main ($) {
         } # AFE
           
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
 
         
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5695,7 +5699,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5709,7 +5713,7 @@ sub _tree_construction_main ($) {
         next B;
       } elsif ($token->{tag_name} eq 'nobr') {
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
 
         ## has a |nobr| element in scope
         INSCOPE: for (reverse 0..$#{$self->{open_elements}}) {
@@ -5735,7 +5739,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5751,7 +5755,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5784,13 +5788,13 @@ sub _tree_construction_main ($) {
         } # INSCOPE
           
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
           
         
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5806,7 +5810,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5848,7 +5852,7 @@ sub _tree_construction_main ($) {
           } # INSCOPE
           
           $reconstruct_active_formatting_elements
-            ->($self, $insert_to_current, $active_formatting_elements);
+            ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
 
           delete $self->{frameset_ok};
         } elsif ($token->{tag_name} eq 'iframe') {
@@ -5858,7 +5862,7 @@ sub _tree_construction_main ($) {
           
         }
         ## NOTE: There is an "as if in body" code clone.
-        $parse_rcdata->($self, $insert, 0); # RAWTEXT
+        $parse_rcdata->($self, $insert, $open_tables, 0); # RAWTEXT
         next B;
       } elsif ($token->{tag_name} eq 'isindex') {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'isindex', token => $token);
@@ -5921,7 +5925,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -5937,7 +5941,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -5984,13 +5988,13 @@ sub _tree_construction_main ($) {
         } # INSCOPE
 
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
 
         
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -6006,7 +6010,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -6048,7 +6052,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -6064,7 +6068,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -6075,7 +6079,7 @@ sub _tree_construction_main ($) {
       } elsif ($token->{tag_name} eq 'math' or
                $token->{tag_name} eq 'svg') {
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
 
         ## "Adjust MathML attributes" ('math' only) - done in insert-element-f
 
@@ -6088,7 +6092,7 @@ sub _tree_construction_main ($) {
       my $el;
       
       $el = $self->{document}->createElementNS
-			($token->{tag_name} eq 'math' ? $MML_NS : $SVG_NS, $token->{tag_name});
+			($token->{tag_name} eq 'math' ? (MML_NS) : (SVG_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -6102,16 +6106,16 @@ sub _tree_construction_main ($) {
 			 }
 			 elsif ($token->{tag_name} eq 'math' && $attr_name eq 'definitionurl')
 			 {
-				 $attr = $self->{document}->createAttributeNS($MML_NS, 'definitionURL');
+				 $attr = $self->{document}->createAttributeNS((MML_NS), 'definitionURL');
 			 }
 			 elsif ($token->{tag_name} eq 'math')
 			 {
-				 $attr = $self->{document}->createAttributeNS($MML_NS, $attr_name);
+				 $attr = $self->{document}->createAttributeNS((MML_NS), $attr_name);
 			 }
 			 elsif ($token->{tag_name} eq 'svg')
 			 {
 				 $attr = $self->{document}->createAttributeNS(
-					$SVG_NS, ($svg_attr_name->{$attr_name} || $attr_name));
+					(SVG_NS), ($svg_attr_name->{$attr_name} || $attr_name));
 			 }
 			 unless ($attr)
 			 {
@@ -6131,10 +6135,10 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
-      push @{$self->{open_elements}}, [$el, ($el_category_f->{$token->{tag_name} eq 'math' ? $MML_NS : $SVG_NS}->{ $token->{tag_name}} || 0) | FOREIGN_EL];
+      $insert->($self, $el, $open_tables);
+      push @{$self->{open_elements}}, [$el, ($el_category_f->{$token->{tag_name} eq 'math' ? (MML_NS) : (SVG_NS)}->{ $token->{tag_name}} || 0) | FOREIGN_EL];
 
-      if ( $token->{attributes}->{xmlns} and  $token->{attributes}->{xmlns}->{value} ne ($token->{tag_name} eq 'math' ? $MML_NS : $SVG_NS)) {
+      if ( $token->{attributes}->{xmlns} and  $token->{attributes}->{xmlns}->{value} ne ($token->{tag_name} eq 'math' ? (MML_NS) : (SVG_NS))) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad namespace', token =>  $token);
 ## TODO: Error type documentation
       }
@@ -6177,7 +6181,7 @@ sub _tree_construction_main ($) {
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -6193,7 +6197,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -6213,13 +6217,13 @@ sub _tree_construction_main ($) {
 
         ## NOTE: There is an "as if <br>" code clone.
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
         
         
     {
       my $el;
       
-      $el = $self->{document}->createElementNS($HTML_NS, $token->{tag_name});
+      $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
@@ -6235,7 +6239,7 @@ sub _tree_construction_main ($) {
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-      $insert->($el);
+      $insert->($self, $el, $open_tables);
       push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
     }
   
@@ -6432,7 +6436,7 @@ sub _tree_construction_main ($) {
           splice @{$self->{open_elements}}, $i;
 
           ## Step 4.
-          $clear_up_to_marker->()
+          $clear_up_to_marker->($active_formatting_elements)
               if {
                 applet => 1, button => 1, marquee => 1, object => 1,
               }->{$token->{tag_name}};
@@ -6585,14 +6589,14 @@ sub _tree_construction_main ($) {
           ## As if <p>, then reprocess the current token
           my $el;
           
-      $el = $self->{document}->createElementNS($HTML_NS, 'p');
+      $el = $self->{document}->createElementNS((HTML_NS), 'p');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-          $insert->($el);
+          $insert->($self, $el, $open_tables);
           ## NOTE: Not inserted into |$self->{open_elements}|.
         }
 
@@ -6615,18 +6619,18 @@ sub _tree_construction_main ($) {
 
         ## As if <br>
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
         
         my $el;
         
-      $el = $self->{document}->createElementNS($HTML_NS, 'br');
+      $el = $self->{document}->createElementNS((HTML_NS), 'br');
     
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
-        $insert->($el);
+        $insert->($self, $el, $open_tables);
         
         ## Ignore the token.
         $token = $self->_get_next_token;

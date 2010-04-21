@@ -2,7 +2,7 @@ NAME
     HTML::HTML5::Parser - Parse HTML reliably with Perl.
 
 VERSION
-    0.03
+    0.04
 
 SYNOPSIS
       use HTML::HTML5::Parser;

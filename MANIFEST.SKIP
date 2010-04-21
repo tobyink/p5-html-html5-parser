@@ -5,3 +5,4 @@
 ^blibdirs
 \.svn
 ^example.*\.pl$
+^MYMETA\.
