@@ -21,9 +21,9 @@ Maintainer:   Toby Inkster <mailto:tobyink@cpan.org>
  - (Update) Copyright 2010.
 
 0.02 [2009-12-16]
- - (Addition) Bundle the html2xhtml tool.
  - Replace Inline::Python encoding detection with weaker, but native Perl
    HTML::Encoding package.
+ - (Addition) Bundle the html2xhtml tool.
 
 0.01 [2009-12-03] # Original version
 
