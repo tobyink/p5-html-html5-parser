@@ -6391,7 +6391,7 @@ sub _tree_construction_main ($) {
             last INSCOPE;
           }
           elsif ($token->{tag_name} eq 'li' and
-                   {ul => 1, ol => 1}->{$node->[0]->manakai_local_name}) {
+                   {ul => 1, ol => 1}->{$node->[0]->localname}) {
             ## Has an element in list item scope
             
             last INSCOPE;
