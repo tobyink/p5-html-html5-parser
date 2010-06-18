@@ -5688,10 +5688,13 @@ sub _tree_construction_main ($) {
         for my $attr_name (keys %{  $token->{attributes}}) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
-          $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
-          $el->setAttributeNodeNS ($attr);
+          if ($attr)
+          {
+            $attr->setValue($attr_t->{value});
+            DATA($attr, manakai_source_line => $attr_t->{line});
+            DATA($attr, manakai_source_column => $attr_t->{column});
+            $el->setAttributeNodeNS ($attr);
+          }
         }
       
         DATA($el, manakai_source_line => $token->{line})
