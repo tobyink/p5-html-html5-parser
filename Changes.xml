@@ -88,6 +88,21 @@
     <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.04.tar.gz"/>
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.04</revision>
   </Version>
+  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100">
+    <dcs:changeset>
+      <rdf:Description>
+        <dcs:item>
+          <dcs:Bugfix>
+            <rdfs:label xml:lang="en">Minor bugfixes.</rdfs:label>
+          </dcs:Bugfix>
+        </dcs:item>
+        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
+      </rdf:Description>
+    </dcs:changeset>
+    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-23</dc:issued>
+    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.100.tar.gz"/>
+    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.100</revision>
+  </Version>
   <Project rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/project">
     <bug-database rdf:resource="http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser"/>
     <created rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-11-26</created>
@@ -105,12 +120,13 @@
     <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02"/>
     <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
     <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
+    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
     <repository>
       <SVNRepository>
         <browse rdf:resource="http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Parser/"/>
       </SVNRepository>
     </repository>
-    <shortdesc xml:lang="en">Parse HTML reliably with Perl</shortdesc>
+    <shortdesc xml:lang="en">parse HTML reliably</shortdesc>
     <tester rdf:resource="http://tobyinkster.co.uk/#i"/>
   </Project>
   <foaf:Person rdf:about="http://tobyinkster.co.uk/#i">

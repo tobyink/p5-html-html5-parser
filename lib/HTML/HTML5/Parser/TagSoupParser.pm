@@ -3,13 +3,13 @@ package HTML::HTML5::Parser::TagSoupParser;
 # This is a port of the Whatpm::HTML package away from dependencies
 # on manakai, and towards CPAN and XML::LibXML.
 
-# caught up to Whatpm::HTML rv cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc.
+# caught up to Whatpm::HTML rv cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc, 23/6/2010.
 
 use 5.008001;
 use strict;
 #use warnings;
 
-our $VERSION='0.04';
+our $VERSION='0.100';
 use Error qw(:try);
 
 our $DATA;

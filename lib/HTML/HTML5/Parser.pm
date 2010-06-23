@@ -2,11 +2,11 @@ package HTML::HTML5::Parser;
 
 =head1 NAME
 
-HTML::HTML5::Parser - Parse HTML reliably with Perl.
+HTML::HTML5::Parser - parse HTML reliably
 
 =head1 VERSION
 
-0.04
+0.100
 
 =head1 SYNOPSIS
 
@@ -30,7 +30,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.04';
+our $VERSION = '0.100';
 
 use Carp;
 use HTML::HTML5::Parser::TagSoupParser;
