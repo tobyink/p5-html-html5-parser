@@ -12,6 +12,15 @@ use strict;
 our $VERSION='0.100';
 use Error qw(:try);
 
+BEGIN
+{
+	*XML::LibXML::Element::appendTextFromUnicode = sub {
+		my ($element, $parser, $text) = @_;
+		utf8::encode($text);
+		return $element->appendText($text);
+	};
+}
+
 our $DATA;
 sub DATA
 {
@@ -1934,7 +1943,7 @@ sub _tree_construction_main ($) {
               #
             } else {
               
-              #$self->{open_elements}->[-1]->[0]->appendText ($s);
+              #$self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $s);
               $self->{open_elements}->[-1]->[0]->appendChild
                   ($self->{document}->createTextNode ($s));
               last C;
@@ -1982,7 +1991,7 @@ sub _tree_construction_main ($) {
           ## are discarded and fragment parsing does not invoke any
           ## script.
           
-          $self->{open_elements}->[-1]->[0]->appendText ($s);
+          $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $s);
         }
       } # C
     } # TABLE_IMS
@@ -2113,7 +2122,7 @@ sub _tree_construction_main ($) {
       if ($token->{type} == CHARACTER_TOKEN) {
         
 
-        $self->{open_elements}->[-1]->[0]->appendText ($token->{data});
+        $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $token->{data});
 
         if ($token->{data} =~ /[^\x09\x0A\x0C\x0D\x20]/) {
           delete $self->{frameset_ok};
@@ -2323,7 +2332,7 @@ sub _tree_construction_main ($) {
               #
             } else {
               
-              $self->{open_elements}->[-1]->[0]->appendText ($1);
+              $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $1);
               ## NOTE: |</head> &#x20;|
               #
             }
@@ -3147,7 +3156,7 @@ sub _tree_construction_main ($) {
         $reconstruct_active_formatting_elements
 			->($self, $insert_to_current, $active_formatting_elements, $open_tables);
         
-        $self->{open_elements}->[-1]->[0]->appendText($token->{data});
+        $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $token->{data});
 
         if ($token->{data} =~ /[^\x09\x0A\x0C\x0D\x20]/) {
           delete $self->{frameset_ok};
@@ -4312,7 +4321,7 @@ sub _tree_construction_main ($) {
     } elsif (($self->{insertion_mode} & IM_MASK) == IN_COLUMN_GROUP_IM) {
           if ($token->{type} == CHARACTER_TOKEN) {
             if ($token->{data} =~ s/^([\x09\x0A\x0C\x20]+)//) {
-              $self->{open_elements}->[-1]->[0]->appendText ($1);
+              $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $1);
               unless (length $token->{data}) {
                 
                 $token = $self->_get_next_token;
@@ -4423,7 +4432,7 @@ sub _tree_construction_main ($) {
     } elsif ($self->{insertion_mode} & SELECT_IMS) {
       if ($token->{type} == CHARACTER_TOKEN) {
         
-        $self->{open_elements}->[-1]->[0]->appendText ($token->{data});
+        $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $token->{data});
         $token = $self->_get_next_token;
         next B;
       } elsif ($token->{type} == START_TAG_TOKEN) {
@@ -4749,7 +4758,7 @@ sub _tree_construction_main ($) {
           $reconstruct_active_formatting_elements
 				->($self, $insert_to_current, $active_formatting_elements, $open_tables);
               
-          $self->{open_elements}->[-1]->[0]->appendText ($1);
+          $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $1);
           
           unless (length $token->{data}) {
             
@@ -4837,7 +4846,7 @@ sub _tree_construction_main ($) {
     } elsif ($self->{insertion_mode} & FRAME_IMS) {
       if ($token->{type} == CHARACTER_TOKEN) {
         if ($token->{data} =~ s/^([\x09\x0A\x0C\x20]+)//) {
-          $self->{open_elements}->[-1]->[0]->appendText ($1);
+          $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $1);
           
           unless (length $token->{data}) {
             
