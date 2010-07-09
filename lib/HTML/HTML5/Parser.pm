@@ -30,7 +30,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.100';
+our $VERSION = '0.101';
 
 use Carp;
 use HTML::HTML5::Parser::TagSoupParser;

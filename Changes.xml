@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rdf:RDF
+   xmlns:author="http://purl.org/NET/cpan-uri/person/"
+   xmlns:dbug="http://ontologi.es/doap-bugs#"
    xmlns:dc="http://purl.org/dc/terms/"
    xmlns:dcs="http://ontologi.es/doap-changeset#"
    xmlns:foaf="http://xmlns.com/foaf/0.1/"
@@ -103,6 +105,27 @@
     <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.100.tar.gz"/>
     <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.100</revision>
   </Version>
+  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101">
+    <dcs:changeset>
+      <rdf:Description>
+        <dcs:item>
+          <dcs:Bugfix>
+            <dcs:fixes>
+              <rdf:Description>
+                <dbug:reporter rdf:resource="http://purl.org/NET/cpan-uri/person/gwilliams"/>
+                <rdfs:label xml:lang="en">Wide characters in DOM tree.</rdfs:label>
+              </rdf:Description>
+            </dcs:fixes>
+            <rdfs:label xml:lang="en">UTF-8 fix.</rdfs:label>
+          </dcs:Bugfix>
+        </dcs:item>
+        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
+      </rdf:Description>
+    </dcs:changeset>
+    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-30</dc:issued>
+    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.101.tar.gz"/>
+    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.101</revision>
+  </Version>
   <Project rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/project">
     <bug-database rdf:resource="http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser"/>
     <created rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-11-26</created>
@@ -121,6 +144,7 @@
     <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
     <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
     <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
+    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101"/>
     <repository>
       <SVNRepository>
         <browse rdf:resource="http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Parser/"/>
