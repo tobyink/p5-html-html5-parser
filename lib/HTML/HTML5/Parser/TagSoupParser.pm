@@ -2021,11 +2021,13 @@ sub _tree_construction_main ($) {
       $self->{parse_error}->(level => $self->{level}->{must}, type => 'not first start tag', token => $token);
       my $top_el = $self->{open_elements}->[0]->[0];
       for my $attr_name (keys %{$token->{attributes}}) {
+        eval {
         unless ($top_el->hasAttributeNS (undef, $attr_name)) {
           
           $top_el->setAttributeNS
             (undef, $attr_name, $token->{attributes}->{$attr_name}->{value});
         }
+	};
       }
       
       $token = $self->_get_next_token;
