@@ -1217,6 +1217,7 @@ sub _tree_construction_root_element ($) {
         for my $attr_name (keys %{ $token->{attributes}}) {
           my $attr_t =  $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
+			 next unless $attr;
           $attr->setValue ($attr_t->{value});
           DATA($attr, manakai_source_line => $attr_t->{line});
           DATA($attr, manakai_source_column => $attr_t->{column});
