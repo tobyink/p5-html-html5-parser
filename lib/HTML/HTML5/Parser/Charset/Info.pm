@@ -570,7 +570,7 @@ $Charset->{'shift_jis'}
 = $HTMLCharset->{'mskanji'}
 = __PACKAGE__->new ({
   category => CHARSET_CATEGORY_SJIS | CHARSET_CATEGORY_BLOCK_SAFE |
-      CHARSET_CATEGORY_MIME_TEXT,
+      CHARSET_CATEGORY_MIME_TEXT | CHARSET_CATEGORY_ASCII_COMPAT,
   iana_names => {
     'shift_jis' => PREFERRED_CHARSET_NAME | PRIMARY_CHARSET_NAME | REGISTERED_CHARSET_NAME,
     'ms_kanji' => REGISTERED_CHARSET_NAME,
@@ -703,7 +703,7 @@ $Charset->{'iso-2022-jp'}
 = $HTMLCharset->{'iso2022jp'}
 = $HTMLCharset->{'junetcode'}
 = __PACKAGE__->new ({
-  category => CHARSET_CATEGORY_MIME_TEXT,
+  category => CHARSET_CATEGORY_MIME_TEXT | CHARSET_CATEGORY_ASCII_COMPAT,
   iana_names => {
     'iso-2022-jp' => PREFERRED_CHARSET_NAME | PRIMARY_CHARSET_NAME | REGISTERED_CHARSET_NAME,
     'csiso2022jp' => REGISTERED_CHARSET_NAME,
