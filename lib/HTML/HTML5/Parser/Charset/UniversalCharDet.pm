@@ -6,7 +6,7 @@ use HTML::Encoding qw(encoding_from_first_chars encoding_from_html_document);
 our $VERSION='0.101';
 our $DEBUG;
 
-sub _detect ($) {
+sub _detect {
 	my $d = encoding_from_html_document($_[0], 'xhtml'=>0);
 	return {encoding=>$d} if $d;
 	$d = encoding_from_first_chars($_[0]);
@@ -30,7 +30,7 @@ sub detect_byte_string ($$) {
   }
 } # detect_byte_string
 
-#Copyright 2007 Wakaba <w@suika.fam.cx>
+#Copyright 2007-2010 Wakaba <w@suika.fam.cx>
 #Copyright 2009-2010 Toby Inkster <tobyink@cpan.org>
 #
 #This library is free software; you can redistribute it

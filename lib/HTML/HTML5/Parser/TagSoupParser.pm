@@ -10,6 +10,8 @@ use 5.008001;
 use strict;
 #use warnings;
 
+use Data::Dumper;
+
 our $VERSION='0.101';
 use Error qw(:try);
 
@@ -31,11 +33,15 @@ sub DATA
 	my $oaddr  = refaddr($object);
 	
 	$DATA->{$oaddr} ||= {};
-		
-	my ($k, $v) = @_;
-	$DATA->{$oaddr}{$k} = $v
-		if defined $k;
-	
+  
+  my ($k, $v) = @_;
+  if (scalar(@_) == 2)
+  {
+    $DATA->{$oaddr}{$k} = $v
+      if defined $k;
+  }
+    
+	return $DATA->{$oaddr}{$k} if $k;
 	return $DATA->{$oaddr};
 }
 
@@ -70,18 +76,16 @@ sub XMLNS_NS () { q<http://www.w3.org/2000/xmlns/> }
 
 ## Element categories
 
-## Bits 17-18
-sub SVG_EL () { 0b1_000000000000000000 }
-sub MML_EL () { 0b1_00000000000000000 }
+## Bits 14-18
+sub BUTTON_SCOPING_EL () { 0b1_000000000000000000 } ## Special
+sub SPECIAL_EL () { 0b1_00000000000000000 }         ## Special
+sub SCOPING_EL () { 0b1_0000000000000000 }          ## Special
+sub FORMATTING_EL () { 0b1_000000000000000 }        ## Formatting
+sub PHRASING_EL () { 0b1_00000000000000 }           ## Ordinary
 
-## Bits 12-16
-sub BUTTON_SCOPING_EL () { 0b1_0000000000000000 } ## Special
-sub SPECIAL_EL () { 0b1_000000000000000 }         ## Special
-sub SCOPING_EL () { 0b1_00000000000000 }          ## Special
-sub FORMATTING_EL () { 0b1_0000000000000 }        ## Formatting
-sub PHRASING_EL () { 0b1_000000000000 }           ## Ordinary
-
-## Bits 10-11
+## Bits 10-13
+sub SVG_EL () { 0b1_0000000000000 }
+sub MML_EL () { 0b1_000000000000 }
 #sub FOREIGN_EL () { 0b1_00000000000 } # see HTML::HTML5::Parser::Tokenizer
 sub FOREIGN_FLOW_CONTENT_EL () { 0b1_0000000000 }
 
@@ -184,10 +188,19 @@ sub NOBR_EL () { FORMATTING_EL | 0b010 }
 
 sub RUBY_EL () { PHRASING_EL | 0b001 }
 
-## ISSUE: ALL_END_TAG_OPTIONAL_EL?
+## NOTE: These elements are not included in |ALL_END_TAG_OPTIONAL_EL|.
 sub OPTGROUP_EL () { PHRASING_EL | END_TAG_OPTIONAL_EL | 0b001 }
 sub OPTION_EL () { PHRASING_EL | END_TAG_OPTIONAL_EL | 0b010 }
 sub RUBY_COMPONENT_EL () { PHRASING_EL | END_TAG_OPTIONAL_EL | 0b100 }
+
+## "MathML text integration point" elements.
+sub MML_TEXT_INTEGRATION_EL () {
+  MML_EL |
+  SCOPING_EL |
+  BUTTON_SCOPING_EL |
+  FOREIGN_EL |
+  FOREIGN_FLOW_CONTENT_EL
+} # MML_TEXT_INTEGRATION_EL
 
 sub MML_AXML_EL () {
   MML_EL |
@@ -196,6 +209,21 @@ sub MML_AXML_EL () {
   FOREIGN_EL |
   0b001
 } # MML_AXML_EL
+
+## "HTML integration point" elements in SVG namespace.
+sub SVG_INTEGRATION_EL () {
+  SVG_EL |
+  SCOPING_EL |
+  BUTTON_SCOPING_EL |
+  FOREIGN_EL |
+  FOREIGN_FLOW_CONTENT_EL
+} # SVG_INTEGRATION_EL
+
+sub SVG_SCRIPT_EL () {
+  SVG_EL |
+  FOREIGN_EL |
+  0b101
+} # SVG_SCRIPT_EL
 
 my $el_category = {
   a => A_EL,
@@ -305,17 +333,17 @@ my $el_category = {
 my $el_category_f = {
   (MML_NS) => {
     'annotation-xml' => MML_AXML_EL,
-    mi => MML_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
-    mo => MML_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
-    mn => MML_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
-    ms => MML_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
-    mtext => MML_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
+    mi => MML_TEXT_INTEGRATION_EL,
+    mo => MML_TEXT_INTEGRATION_EL,
+    mn => MML_TEXT_INTEGRATION_EL,
+    ms => MML_TEXT_INTEGRATION_EL,
+    mtext => MML_TEXT_INTEGRATION_EL,
   },
   (SVG_NS) => {
-    foreignObject => SVG_EL | SCOPING_EL | BUTTON_SCOPING_EL |
-        FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
-    desc => SVG_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
-    title => SVG_EL | FOREIGN_EL | FOREIGN_FLOW_CONTENT_EL,
+    foreignObject => SVG_INTEGRATION_EL,
+    desc => SVG_INTEGRATION_EL,
+    title => SVG_INTEGRATION_EL,
+    script => SVG_SCRIPT_EL,
   },
   ## NOTE: In addition, FOREIGN_EL is set to non-HTML elements, MML_EL
   ## is set to MathML elements, and SVG_EL is set to SVG elements.
@@ -1029,10 +1057,14 @@ sub _tree_construction_initial ($) {
         
         #
       }
-      
+ 
 		DATA($self->{'document'}, 'DTD_PUBLIC_ID', $token->{pubid});
 		DATA($self->{'document'}, 'DTD_SYSTEM_ID', $token->{sysid});
-      
+
+    # TOBYINK
+		DATA($self->{'document'}, isHTML4 => 1)
+			if ($token->{pubid} =~ /html 4/i or $token->{sysid} =~ /html4/i);
+
       if ($token->{quirks} or $doctype_name ne 'html') {
         
         DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
@@ -1332,13 +1364,10 @@ sub _reset_insertion_mode ($) {
     my $last;
     
     ## Step 2
-    my $foreign;
-    
-    ## Step 3
     my $i = -1;
     my $node = $self->{open_elements}->[$i];
     
-    ## LOOP: Step 4
+    ## LOOP: Step 3
     LOOP: {
       if ($self->{open_elements}->[0]->[0] eq $node->[0]) {
         $last = 1;
@@ -1350,15 +1379,14 @@ sub _reset_insertion_mode ($) {
         }
       }
       
-      ## Step 5..15
+      ## Step 4..14
       my $new_mode;
-      if ($node->[1] & FOREIGN_EL) {
+      if ($node->[1] & SVG_EL or $node->[1] & MML_EL) {
         
-        ## NOTE: Strictly spaking, this case should only apply to MathML and
-        ## SVG elements.  Currently the HTML syntax supports only MathML and
-        ## SVG elements as foreigners.
-        $foreign = 1;
-        #$new_mode = IN_BODY_IM | IN_FOREIGN_CONTENT_IM;
+        $new_mode = IN_FOREIGN_CONTENT_IM | IN_BODY_IM;
+      } elsif ($node->[1] & FOREIGN_EL) {
+        
+        #
       } elsif ($node->[1] == TABLE_CELL_EL) {
         if ($last) {
           
@@ -1387,7 +1415,7 @@ sub _reset_insertion_mode ($) {
       }
       $self->{insertion_mode} = $new_mode and last LOOP if defined $new_mode;
       
-      ## Step 16
+      ## Step 15
       if ($node->[1] == HTML_EL) {
         ## NOTE: Commented out in the spec (HTML5 revision 3894).
         #unless (defined $self->{head_element}) {
@@ -1403,25 +1431,22 @@ sub _reset_insertion_mode ($) {
         
       }
       
-      ## Step 17
+      ## Step 16
 		if ($last)
 		{
 			$self->{insertion_mode} = IN_BODY_IM;
 			last LOOP;
 		}
       
-      ## Step 18
+      ## Step 17
       $i--;
       $node = $self->{open_elements}->[$i];
       
-      ## Step 19
+      ## Step 18
       redo LOOP;
     } # LOOP
 
-  ## END: Step 20
-  if ($foreign) {
-    $self->{insertion_mode} |= IN_FOREIGN_CONTENT_IM;
-  }
+  ## END
 } # _reset_insertion_mode
 
   my $parse_rcdata = sub ($$$$) {
@@ -2140,28 +2165,63 @@ sub _tree_construction_main ($) {
       } else {
         die "$0: $token->{type}: In CDATA/RCDATA: Unknown token type";        
       }
+      
     } elsif ($self->{insertion_mode} & IN_FOREIGN_CONTENT_IM) {
-      my $break_foreign_land;
       if ($token->{type} == CHARACTER_TOKEN) {
+        ## "In foreign content" insertion mode, character token.
         
-
-        $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $token->{data});
-
-        if ($token->{data} =~ /[^\x09\x0A\x0C\x0D\x20]/) {
-          delete $self->{frameset_ok};
+        if (
+          ( ## If the current node is an HTML element.
+            not $self->{open_elements}->[-1]->[1] & FOREIGN_EL
+          ) or
+          ( ## If the current node is an HTML integration point (other
+            ## than |annotation-xml|).
+            $self->{open_elements}->[-1]->[1] == SVG_INTEGRATION_EL
+          ) or
+          ( ## If the current node is an |annotation-xml| whose
+            ## |encoding| is |text/html| or |application/xhtml+xml|
+            ## (HTML integration point).
+            $self->{open_elements}->[-1]->[1] == MML_AXML_EL and
+            do {
+              my $encoding = $self->{open_elements}->[-1]->[0]->getAttributeNS(undef, 'encoding') || '';
+              $encoding =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
+              if ($encoding eq 'text/html' or 
+                  $encoding eq 'application/xhtml+xml') {
+                1;
+              } else {
+                0;
+              }
+            }
+          )
+        ) {
+          ## I.e., if the current node is an HTML element, or if the
+          ## current node is an HTML integration point.
+          
+          ## Process the token "using the rules for" the "in body"
+          ## insertion mode, then goto |continue|.
+          # ...
+        } else {
+          $self->{open_elements}->[-1]->[0]->manakai_append_text ($token->{data});
+          
+          if ($token->{data} =~ /[^\x09\x0A\x0C\x0D\x20]/) {
+            delete $self->{frameset_ok};
+          }
+          
+          $token = $self->_get_next_token;
+          next B;
         }
 
-        $token = $self->_get_next_token;
-        next B;
-        
       } elsif ($token->{type} == START_TAG_TOKEN) {
         ## "In foreign content" insertion mode, start tag token.
 
         if (
-          (
+          ( ## Start tag, if the current node is an HTML element.
             not $self->{open_elements}->[-1]->[1] & FOREIGN_EL
           ) or
-          (
+          ( ## Non-"mglyph" non-"malignmark" start tag, if the current
+            ## node is a MathML text integration point; Start tag, if
+            ## the current node is an HTML integration point (other
+            ## than |annotation-xml|).
             $self->{open_elements}->[-1]->[1] & FOREIGN_FLOW_CONTENT_EL and
             $self->{open_elements}->[-1]->[1] != MML_AXML_EL and
             (
@@ -2169,7 +2229,11 @@ sub _tree_construction_main ($) {
               not {mglyph => 1, malignmark => 1}->{$token->{tag_name}}
             )
           ) or
-          (
+          ( ## "svg" start tag, if the current node is an
+            ## |annotation-xml| element; Start tag, if the current
+            ## node is an |annotation-xml| whose |encoding| is
+            ## |text/html| or |application/xhtml+xml| (HTML
+            ## integration point).
             $self->{open_elements}->[-1]->[1] == MML_AXML_EL and
             (
               $token->{tag_name} eq 'svg' or
@@ -2186,9 +2250,10 @@ sub _tree_construction_main ($) {
             )
           )
         ) {
-          ## NOTE: "using the rules for secondary insertion mode"then"continue"
-          
-          #
+
+          ## Process the token "using the rules for" the "in body"
+          ## insertion mode, then goto |continue|.
+          # ...
           
         } elsif ({
                   b => 1, big => 1, blockquote => 1, body => 1, br => 1,
@@ -2204,9 +2269,47 @@ sub _tree_construction_main ($) {
                   ($token->{attributes}->{color} or
                    $token->{attributes}->{face} or
                    $token->{attributes}->{size}))) {
+          ## "In foreign content" insertion mode, HTML-only start
+          ## tags.
+           
+           
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'not closed',
+                          text => $self->{open_elements}->[-1]->[0]
+                              ->localname,
+                          token => $token);
 
-          $break_foreign_land = 1;
+          pop @{$self->{open_elements}};
+          V: {
+            my $current_node = $self->{open_elements}->[-1];
+            if (
+              ## An HTML element.
+              not $current_node->[1] & FOREIGN_EL or
+
+              ## An MathML text integration point.
+              $current_node->[1] == MML_TEXT_INTEGRATION_EL or
+              
+              ## An HTML integration point.
+              $current_node->[1] == SVG_INTEGRATION_EL or 
+              ($current_node->[1] == MML_AXML_EL and
+               do {
+                 my $encoding = $current_node->[0]->getAttributeNS(undef, 'encoding') || '';
+                 $encoding =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
+                 ($encoding eq 'text/html' or
+                  $encoding eq 'application/xhtml+xml');
+               })
+            ) {
+              last V;
+            }
+            
+            pop @{$self->{open_elements}};
+            redo V;
+          }
+          
+          ## Reprocess.
+          next B; # goto |continue|
+
         } else {
+          ## "In foreign content" insertion mode, foreign start tags.
           my $nsuri = $self->{open_elements}->[-1]->[0]->namespaceURI;
           my $tag_name = $token->{tag_name};
           if ($nsuri eq (SVG_NS)) {
@@ -2307,7 +2410,7 @@ sub _tree_construction_main ($) {
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
-      push @{$self->{open_elements}}, [$el, ($el_category_f->{$nsuri}->{ $tag_name} || 0) | FOREIGN_EL | ($nsuri eq SVG_NS ? SVG_EL : $nsuri eq MML_NS ? MML_EL : 0)];
+      push @{$self->{open_elements}}, [$el, ($el_category_f->{$nsuri}->{ $tag_name} || 0) | FOREIGN_EL | (($nsuri) eq SVG_NS ? SVG_EL : ($nsuri) eq MML_NS ? MML_EL : 0)];
  
       if ( $token->{attributes}->{xmlns} and  $token->{attributes}->{xmlns}->{value} ne ($nsuri)) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad namespace', token =>  $token);
@@ -2330,21 +2433,37 @@ sub _tree_construction_main ($) {
           $token = $self->_get_next_token;
           next B;
         }
+        
       } elsif ($token->{type} == END_TAG_TOKEN) {
-        ## NOTE: "using the rules for secondary insertion mode" then "continue"
-        if ($token->{tag_name} eq 'script') {
+        if ($token->{tag_name} eq 'script' and
+            $self->{open_elements}->[-1]->[1] == SVG_SCRIPT_EL) {
+          ## "In foreign content" insertion mode, "script" end tag, if
+          ## the current node is an SVG |script| element.
           
-          #
+          pop @{$self->{open_elements}};
+          
           ## XXXscript: Execute script here.
-        } elsif ($self->{open_elements}->[-1]->[1] & FOREIGN_EL) {
+          $token = $self->_get_next_token;
+          next B;
           
+        } elsif (not $self->{open_elements}->[-1]->[1] & FOREIGN_EL) {
+          ## "In foreign content" insertion mode, an end tag, if the
+          ## current node is an HTML element.
+          
+          ## Process the token "using the rules for" the "in body"
+          ## insertion mode, then goto |continue|.
+          # ...
+
+        } else {
+          ## "In foreign content" insertion mode, an end tag, if the
+          ## current node is a foreign element.
           
           ## 1.
           my $i = -1;
           my $node = $self->{open_elements}->[$i];
           
           ## 2.
-          my $tag_name = $node->[0]->localName;
+          my $tag_name = $node->[0]->localname;
           $tag_name =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
           if ($tag_name ne $token->{tag_name}) {
             $self->{parse_error}->(level => $self->{level}->{must}, type => 'unmatched end tag',
@@ -2354,7 +2473,7 @@ sub _tree_construction_main ($) {
 
           ## 3.
           LOOP: {
-            my $tag_name = $node->[0]->localName;
+            my $tag_name = $node->[0]->localname;
             $tag_name =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
             if ($tag_name eq $token->{tag_name}) {
               splice @{$self->{open_elements}}, $i, -$i, ();
@@ -2373,58 +2492,33 @@ sub _tree_construction_main ($) {
           ## Steps 6. and 7. is done in the |continue| block.
           $token = $self->_get_next_token;
           next B;
-        } else {
           
-          #
         }
+        
       } elsif ($token->{type} == END_OF_FILE_TOKEN) {
         ## "In foreign content" insertion mode, an end-of-file token.
+
+        ## Process the token "using the rules for" the "in body"
+        ## insertion mode, then goto |continue|.
+        #...
         
-        $break_foreign_land = 1;
       } else {
         die "$0: $token->{type}: Unknown token type";        
       }
 
-      if ($break_foreign_land) {
-        $self->{parse_error}->(level => $self->{level}->{must}, type => 'not closed',
-                        text => $self->{open_elements}->[-1]->[0]
-                            ->tagName,
-                        token => $token);
-                        
-        pop @{$self->{open_elements}};
-        {
-          my $current_node = $self->{open_elements}->[-1];
-          if (not $current_node->[1] & FOREIGN_EL) {
-            last;
-          }
-          my $current_node_ns = $current_node->[0]->namespace_uri;
-          if (defined $current_node_ns) {
-            if ($current_node_ns eq SVG_NS) {
-              my $current_ln = $current_node->[0]->manakai_local_name;
-              if ({
-                foreignObject => 1, desc => 1, title => 1,
-              }->{$current_ln}) {
-                last;
-              }
-            } elsif ($current_node_ns eq MML_NS) {
-              my $current_ln = $current_node->[0]->manakai_local_name;
-              if ({
-                mi => 1, mo => 1, mn => 1, ms => 1, mtext => 1,
-                'annotation-xml' => 1,
-              }->{$current_ln}) {
-                last;
-              }
-            }
-          }
-
-          pop @{$self->{open_elements}};
-          redo;
-        }
-
-        ## Reprocess.
-        next B; # goto |continue|
-      } # $break_foreign_land
+      # ...
     } # insertion_mode
+
+    # BEGIN:TOBYINK
+    if ($self->{insertion_mode} == IN_HEAD_IM and
+        $token->{tag_name} eq 'object' and
+        $token->{type} == END_TAG_TOKEN and
+        DATA($self->{'document'}, 'isHTML4')) {
+          
+      pop @{$self->{open_elements}}
+        if $self->{open_elements}->[-1]->[0]->localname eq 'object';
+    }
+    # END:TOBYINK
 
     if ($self->{insertion_mode} & HEAD_IMS) {
       if ($token->{type} == CHARACTER_TOKEN) {
@@ -2491,7 +2585,7 @@ sub _tree_construction_main ($) {
       my $el;
       
       $el = $self->{document}->createElementNS((HTML_NS), 'body');
-    
+	 
         DATA($el, manakai_source_line => $token->{line})
             if defined $token->{line};
        DATA($el, manakai_source_column => $token->{column})
@@ -2984,8 +3078,34 @@ sub _tree_construction_main ($) {
           
           $token = $self->_get_next_token;
           next B;
+        # BEGIN:TOBYINK
+        } elsif ($self->{insertion_mode} == IN_HEAD_IM and
+                 $token->{tag_name} =~ m'^(object|param)$' and
+                 DATA($self->{'document'}, 'isHTML4')) {
+          {
+            my $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});        
+            for my $attr_name (keys %{  $token->{attributes}}) {
+              my $attr_t =   $token->{attributes}->{$attr_name};
+              my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
+              $attr->setValue($attr_t->{value});
+              DATA($attr, manakai_source_line => $attr_t->{line});
+              DATA($attr, manakai_source_column => $attr_t->{column});
+              $el->setAttributeNodeNS($attr);
+            }
+            DATA($el, manakai_source_line => $token->{line}) if defined $token->{line};
+            DATA($el, manakai_source_column => $token->{column}) if defined $token->{column};
+            $self->{open_elements}->[-1]->[0]->appendChild ($el);
+            push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
+          }
+          if ($token->{tag_name} eq 'param')
+          {
+            pop @{$self->{open_elements}};
+            delete $self->{self_closing};
+          }
+          $token = $self->_get_next_token;
+          next B;
+        # END:TOBYINK  
         } else {
-          
           #
         }
 
@@ -3027,7 +3147,6 @@ sub _tree_construction_main ($) {
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
     }
-  
         $self->{insertion_mode} = IN_BODY_IM;
         ## The "frameset-ok" flag is not changed in this case.
         ## Reprocess the token.
@@ -3246,11 +3365,15 @@ sub _tree_construction_main ($) {
       } else {
         die "$0: $token->{type}: Unknown token type";
       }
+      
     } elsif ($self->{insertion_mode} & BODY_IMS) {
       if ($token->{type} == CHARACTER_TOKEN) {
-        
+        ## "In body" insertion mode, character token.  It is also used
+        ## for character tokens in "in foreign content" insertion
+        ## mode, for certain cases.
+
         $reconstruct_active_formatting_elements
-			->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
         
         $self->{open_elements}->[-1]->[0]->appendTextFromUnicode($self, $token->{data});
 
@@ -3493,10 +3616,7 @@ sub _tree_construction_main ($) {
               INSCOPE: {
                 for (reverse 0..$#{$self->{open_elements}}) {
                   my $node = $self->{open_elements}->[$_];
-                  if ($node->[0]->manakai_local_name eq $token->{tag_name} and
-                      # XXX not in spec
-                      $node->[0]->namespace_uri and
-                      $node->[0]->namespace_uri eq HTML_NS) {
+                  if ($node->[0]->localname eq $token->{tag_name}) {
                     
                     $i = $_;
 
@@ -4616,34 +4736,32 @@ sub _tree_construction_main ($) {
           
           $token = $self->_get_next_token;
           next B;
-        } elsif ({
-                   select => 1, input => 1, textarea => 1, keygen => 1,
-                 }->{$token->{tag_name}} or
-                 (($self->{insertion_mode} & IM_MASK)
-                      == IN_SELECT_IN_TABLE_IM and
-                  {
-                   caption => 1, table => 1,
-                   tbody => 1, tfoot => 1, thead => 1,
-                   tr => 1, td => 1, th => 1,
-                  }->{$token->{tag_name}})) {
+
+        } elsif ($token->{tag_name} eq 'select') {
           ## "In select" / "in select in table" insertion mode,
-          ## "select" start tag; "in select" / "in select in table"
-          ## insertion mode, "input", "keygen", "textarea" start tag;
-          ## "in select in table" insertion mode, table-related start
-          ## tags.
- 
-          ## Parse error.
-          if ($token->{tag_name} eq 'select') {
-              $self->{parse_error}->(level => $self->{level}->{must}, type => 'select in select', ## XXX: documentation
-                              token => $token);
-          } else {
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'not closed', text => 'select',
-                            token => $token);
-          }
+          ## "select" start tag.
           
-          ## If there "have an element in table scope" where element
-          ## is a |select| element, ("input", "keygen", "textarea"
-          ## start tag)
+
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'select in select', ## XXX: documentation
+                          token => $token);
+
+          ## Act as if the token were </select>.
+          $token = {type => END_TAG_TOKEN, tag_name => 'select',
+                    line => $token->{line}, column => $token->{column}};
+          next B;
+
+        } elsif ({
+          input => 1, textarea => 1, keygen => 1,
+        }->{$token->{tag_name}}) {
+          ## "In select" / "in select in table" insertion mode,
+          ## "input", "keygen", "textarea" start tag.
+          
+          ## Parse error.
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'not closed', text => 'select',
+                          token => $token); 
+                          
+          ## If there "have an element in select scope" where element    
+          ## is a |select| element.
           my $i;
           INSCOPE: for (reverse 0..$#{$self->{open_elements}}) {
             my $node = $self->{open_elements}->[$_];
@@ -4651,51 +4769,56 @@ sub _tree_construction_main ($) {
               
               $i = $_;
               last INSCOPE;
-            } elsif ($node->[1] & TABLE_SCOPING_EL) {
+            } elsif ($node->[1] == OPTGROUP_EL or
+                     $node->[1] == OPTION_EL) {
+              
+              #
+            } else {
               
               last INSCOPE;
             }
           } # INSCOPE
           unless (defined $i) {
-            
-            if ($token->{tag_name} eq 'select') {
-              ## Act as if there were <select> - parse error.
-              ##
-              ## NOTE: This error would be raised when
-              ## |select.innerHTML = '<select>'| is executed; in this
-              ## case two errors, "select in select" and "unmatched
-              ## end tags" are reported to the user, the latter might
-              ## be confusing but this is what the spec requires.
-              $self->{parse_error}->(level => $self->{level}->{must}, type => 'unmatched end tag',
-                              text => 'select',
-                              token => $token);
-            }
             ## Ignore the token.
             
             $token = $self->_get_next_token;
             next B;
           }
 
-          ## Act as if there were <select> - pop elements until a
-          ## |select| element is popped.
+          ## Otherwise, act as if there were </select>, then reprocess
+          ## the token.
+          $token->{self_closing} = $self->{self_closing};
+          unshift @{$self->{token}}, $token;
+          delete $self->{self_closing};
+    
+          $token = {type => END_TAG_TOKEN, tag_name => 'select',
+                    line => $token->{line}, column => $token->{column}};
+          next B;
+ 
+        } elsif (
+          ($self->{insertion_mode} & IM_MASK) == IN_SELECT_IN_TABLE_IM and
+          {
+            caption => 1, table => 1, tbody => 1, tfoot => 1, thead => 1,
+            tr => 1, td => 1, th => 1,
+          }->{$token->{tag_name}}
+        ) {
+          ## "In select in table" insertion mode, table-related start
+          ## tags.
 
-          splice @{$self->{open_elements}}, $i;
+          ## Parse error.
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'not closed', text => 'select',
+                          token => $token);
 
-          ## Act as if there were <select> - reset the insertion mode
-          ## appropriately.
-          $self->_reset_insertion_mode;
-
-          if ($token->{tag_name} eq 'select') {
-            
-            ## Ignore the token. (<select> was processed instead.)
-            $token = $self->_get_next_token;
-            next B;
-          } else {
-            
-            
-            ## Reprocess the token.
-            next B;
-          }
+          ## Act as if there were </select>, then reprocess the token.
+          
+          $token->{self_closing} = $self->{self_closing};
+          unshift @{$self->{token}}, $token;
+          delete $self->{self_closing};
+    
+          $token = {type => END_TAG_TOKEN, tag_name => 'select',
+                    line => $token->{line}, column => $token->{column}};
+          next B;
+          
         } elsif ($token->{tag_name} eq 'script') {
           
           ## NOTE: This is an "as if in head" code clone
@@ -4710,6 +4833,7 @@ sub _tree_construction_main ($) {
           $token = $self->_get_next_token;
           next B;
         }
+        
       } elsif ($token->{type} == END_TAG_TOKEN) {
         if ($token->{tag_name} eq 'optgroup') {
           if ($self->{open_elements}->[-1]->[1] == OPTION_EL and
@@ -4746,8 +4870,8 @@ sub _tree_construction_main ($) {
         } elsif ($token->{tag_name} eq 'select') {
           ## "In select" / "in select in table" insertion mode,
           ## "select" end tag.
-
-          ## There "have an element in table scope" where the element
+          
+          ## There "have an element in select scope" where the element
           ## is |select|.
           my $i;
           INSCOPE: for (reverse 0..$#{$self->{open_elements}}) {
@@ -4756,8 +4880,12 @@ sub _tree_construction_main ($) {
               
               $i = $_;
               last INSCOPE;
-            } elsif ($node->[1] & TABLE_SCOPING_EL) {
+            } elsif ($node->[1] == OPTION_EL or
+                     $node->[1] == OPTGROUP_EL) {
               
+              #
+            } else {
+  
               last INSCOPE;
             }
           } # INSCOPE
@@ -4780,13 +4908,14 @@ sub _tree_construction_main ($) {
           
           $token = $self->_get_next_token;
           next B;
-        
-        } elsif (($self->{insertion_mode} & IM_MASK)
-                     == IN_SELECT_IN_TABLE_IM and
-                 {
-                  caption => 1, table => 1, tbody => 1,
-                  tfoot => 1, thead => 1, tr => 1, td => 1, th => 1,
-                 }->{$token->{tag_name}}) {
+          
+        } elsif (
+          ($self->{insertion_mode} & IM_MASK) == IN_SELECT_IN_TABLE_IM and
+          {
+            caption => 1, table => 1, tbody => 1, tfoot => 1, thead => 1,
+            tr => 1, td => 1, th => 1,
+          }->{$token->{tag_name}}
+        ) {
           ## "In select in table" insertion mode, table-related end
           ## tags.
           
@@ -4815,41 +4944,16 @@ sub _tree_construction_main ($) {
             $token = $self->_get_next_token;
             next B;
           }
-          
-          ## As if </select> - there "have an element in table scope"
-          ## where the element is |select|.
-          undef $i;
-          INSCOPE: for (reverse 0..$#{$self->{open_elements}}) {
-            my $node = $self->{open_elements}->[$_];
-            if ($node->[1] == SELECT_EL) {
-              
-              $i = $_;
-              last INSCOPE;
-            } elsif ($node->[1] & TABLE_SCOPING_EL) {
-              ## It might not be possible to reach this state.
-              
-              last INSCOPE;
-            }
-          } # INSCOPE
-          unless (defined $i) {
-            
-## TODO: The following error type is correct?
-            $self->{parse_error}->(level => $self->{level}->{must}, type => 'unmatched end tag',
-                            text => 'select', token => $token);
-            ## Ignore the </select> token
-            
-            $token = $self->_get_next_token; ## TODO: ok?
-            next B;
-          }
-              
-          
-          splice @{$self->{open_elements}}, $i;
 
-          $self->_reset_insertion_mode;
-
-          
-          ## reprocess
+          ## Act as if there were </select>, then reprocess the token.
+          $token->{self_closing} = $self->{self_closing};
+          unshift @{$self->{token}}, $token;
+          delete $self->{self_closing};
+    
+          $token = {type => END_TAG_TOKEN, tag_name => 'select',
+                    line => $token->{line}, column => $token->{column}};
           next B;
+          
         } else {
           
           $self->{parse_error}->(level => $self->{level}->{must}, type => 'in select:/',
@@ -5823,9 +5927,11 @@ sub _tree_construction_main ($) {
             last AFE;
           }
         } # AFE
-          
+        
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;          
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
 
         
     {
@@ -5863,8 +5969,10 @@ sub _tree_construction_main ($) {
         $token = $self->_get_next_token;
         next B;
       } elsif ($token->{tag_name} eq 'nobr') {
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
 
         ## has a |nobr| element in scope
         INSCOPE: for (reverse 0..$#{$self->{open_elements}}) {
@@ -5938,8 +6046,10 @@ sub _tree_construction_main ($) {
           }
         } # INSCOPE
           
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
           
         
     {
@@ -6003,8 +6113,10 @@ sub _tree_construction_main ($) {
             }
           } # INSCOPE
           
+          my $insert = $self->{insertion_mode} & TABLE_IMS
+              ? $insert_to_foster : $insert_to_current;
           $reconstruct_active_formatting_elements
-            ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+            ->($self, $insert, $active_formatting_elements, $open_tables);
 
           delete $self->{frameset_ok};
         } elsif ($token->{tag_name} eq 'iframe') {
@@ -6131,9 +6243,11 @@ sub _tree_construction_main ($) {
                     line => $token->{line}, column => $token->{column}};
           next B;
         }
- 
+
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
 
         
     {
@@ -6223,8 +6337,10 @@ sub _tree_construction_main ($) {
         redo B;
       } elsif ($token->{tag_name} eq 'math' or
                $token->{tag_name} eq 'svg') {
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
 
         ## "Adjust MathML attributes" ('math' only) - done in insert-element-f
 
@@ -6281,8 +6397,8 @@ sub _tree_construction_main ($) {
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
-      push @{$self->{open_elements}}, [$el, ($el_category_f->{$token->{tag_name} eq 'math' ? MML_NS : SVG_NS}->{ $token->{tag_name}} || 0) | FOREIGN_EL | ($token->{tag_name} eq 'math' ? MML_NS : SVG_NS eq SVG_NS ? SVG_EL : $token->{tag_name} eq 'math' ? MML_NS : SVG_NS eq MML_NS ? MML_EL : 0)];
- 
+      push @{$self->{open_elements}}, [$el, ($el_category_f->{$token->{tag_name} eq 'math' ? MML_NS : SVG_NS}->{ $token->{tag_name}} || 0) | FOREIGN_EL | (($token->{tag_name} eq 'math' ? MML_NS : SVG_NS) eq SVG_NS ? SVG_EL : ($token->{tag_name} eq 'math' ? MML_NS : SVG_NS) eq MML_NS ? MML_EL : 0)];
+
       if ( $token->{attributes}->{xmlns} and  $token->{attributes}->{xmlns}->{value} ne ($token->{tag_name} eq 'math' ? (MML_NS) : (SVG_NS))) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'bad namespace', token =>  $token);
 ## TODO: Error type documentation
@@ -6299,10 +6415,7 @@ sub _tree_construction_main ($) {
           delete $self->{self_closing};
         } else {
           
-          $self->{insertion_mode} |= IN_FOREIGN_CONTENT_IM;
-          ## NOTE: |<body><math><mi><svg>| -> "in foreign content" insertion
-          ## mode, "in body" (not "in foreign content") secondary insertion
-          ## mode, maybe.
+          $self->{insertion_mode} = IN_FOREIGN_CONTENT_IM | IN_BODY_IM;
         }
 
         $token = $self->_get_next_token;
@@ -6361,8 +6474,10 @@ sub _tree_construction_main ($) {
         }
 
         ## NOTE: There is an "as if <br>" code clone.
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
         
         
     {
@@ -6761,11 +6876,12 @@ sub _tree_construction_main ($) {
                         text => 'br', token => $token);
 
         ## As if <br>
+        my $insert = $self->{insertion_mode} & TABLE_IMS
+            ? $insert_to_foster : $insert_to_current;
         $reconstruct_active_formatting_elements
-          ->($self, $insert_to_current, $active_formatting_elements, $open_tables);
+          ->($self, $insert, $active_formatting_elements, $open_tables);
         
-        my $el;
-        
+        my $el;        
       $el = $self->{document}->createElementNS((HTML_NS), 'br');
     
         DATA($el, manakai_source_line => $token->{line})
@@ -6795,7 +6911,7 @@ sub _tree_construction_main ($) {
             ## Step 1
             ## generate implied end tags
             while ($self->{open_elements}->[-1]->[1] & END_TAG_OPTIONAL_EL and
-                   $self->{open_elements}->[-1]->[0]->localName
+                   $self->{open_elements}->[-1]->[0]->localname
                        ne $token->{tag_name}) {
                          
               ## NOTE: |<ruby><rt></ruby>|.
@@ -7048,28 +7164,40 @@ sub set_inner_html ($$$$;$) {
     ## F4. If /context/ is not undef...
 
     ## F4.1. content model flag
-    my $node_ln = $node->tagName;
-  if ($node_ln eq 'title' or $node_ln eq 'textarea') {
-    $p->{state} = RCDATA_STATE;
-  } elsif ($node_ln eq 'script') {
-    $p->{state} = SCRIPT_DATA_STATE;
-  } elsif ({
-      style => 1,
-      script => 1,
-      xmp => 1,
-      iframe => 1,
-      noembed => 1,
-      noframes => 1,
-      noscript => 1,
-    }->{$node_ln}) {
-    $p->{state} = RAWTEXT_STATE;
-  } elsif ($node_ln eq 'plaintext') {
-    $p->{state} = PLAINTEXT_STATE;
-  }
+    my $node_ns = $node->namespaceURI || '';
+    my $node_ln = $node->localname;
+    if ($node_ns eq HTML_NS) {
+      if ($node_ln eq 'title' or $node_ln eq 'textarea') {
+        $p->{state} = RCDATA_STATE;
+      } elsif ($node_ln eq 'script') {
+        $p->{state} = SCRIPT_DATA_STATE;
+      } elsif ({
+        style => 1,
+        script => 1,
+        xmp => 1,
+        iframe => 1,
+        noembed => 1,
+        noframes => 1,
+        noscript => 1,
+      }->{$node_ln}) {
+        $p->{state} = RAWTEXT_STATE;
+      } elsif ($node_ln eq 'plaintext') {
+        $p->{state} = PLAINTEXT_STATE;
+      }
+      
+      $p->{inner_html_node} = [$node, $el_category->{$node_ln}];
+    } elsif ($node_ns eq SVG_NS) {
+      $p->{inner_html_node} = [$node,
+                               $el_category_f->{$node_ns}->{$node_ln}
+                                   || FOREIGN_EL | SVG_EL];
+    } elsif ($node_ns eq MML_NS) {
+      $p->{inner_html_node} = [$node,
+                               $el_category_f->{$node_ns}->{$node_ln}
+                                   || FOREIGN_EL | MML_EL];
+    } else {
+      $p->{inner_html_node} = [$node, FOREIGN_EL];
+    }
   
-    $p->{inner_html_node} = [$node, $el_category->{$node_ln}];
-      ## TODO: Foreign element OK?
-
     ## F4.2. Root |html| element
     my $root = $doc->createElementNS('http://www.w3.org/1999/xhtml', 'html');
 

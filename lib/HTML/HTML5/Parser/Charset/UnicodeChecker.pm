@@ -1,6 +1,8 @@
 package HTML::HTML5::Parser::Charset::UnicodeChecker;
 use strict;
 
+our $VERSION = '0.101';
+
 ## NOTE: For more information (including rationals of checks performed
 ## in this module), see
 ## <http://suika.fam.cx/gate/2005/sw/Unicode%E7%AC%A6%E5%8F%B7%E5%8C%96%E6%96%87%E5%AD%97%E5%88%97%E3%81%AE%E9%81%A9%E5%90%88%E6%80%A7>.
@@ -166,7 +168,8 @@ $etypes->{$_} = 'unicode should'
 $etypes->{$_} = 'unicode discouraged' for 0x2153 .. 0x217F;
 $etypes->{$_} = 'control char'
     for 0x0001 .. 0x0008, 0x000B, 0x000E .. 0x001F, 0x007F .. 0x009F;
-$etypes->{$_} = 'control char' for 0xD800 .. 0xDFFF;
+#0x0000
+#$etypes->{$_} = 'control char' for 0xD800 .. 0xDFFF;
 
 my $check_char = sub ($$) {
   my ($self, $char_code) = @_;
