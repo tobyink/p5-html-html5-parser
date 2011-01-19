@@ -110,6 +110,7 @@ my:v_0-102
 	dcs:changeset [
 		dcs:versus my:v_0-101 ;
 		dcs:item
+			[ rdfs:label "Fix source_line method."@en ; a dcs:Bugfix ] ;
 			[ rdfs:label "Catch up to revision f2c921a886ab0b3dfb8d21b82525e98a4a921ad4 (2010-10-11) upstream."@en ; a dcs:Update ] ;
 			[ rdfs:label "Allow <object> element to appear in <head> if document has an HTML4 doctype. This is a willful violation of the HTML5 parsing algorithm. (The <object> may have <param> elements as children, as well as any children that would normally be allowed in the <head> of the document, such as <meta>; any other content is treated as the beginning of the <body>, and thus closes <object> and <head>. That's slightly looser than the HTML 4 spec which says only <param> should be used, but stricter than the HTML 4 DTD which allows pretty much anything in there!)"@en ; a dcs:Addition ] ;
 			[ rdfs:label "Support <figcaption> element."@en ; a dcs:Addition ] ;

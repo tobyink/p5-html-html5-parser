@@ -30,7 +30,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.101';
+our $VERSION = '0.102';
 
 use Carp;
 use HTML::HTML5::Parser::TagSoupParser;
@@ -364,9 +364,8 @@ In scalar context, C<source_line> returns the line number of the
 source code that started a particular node (element, attribute or
 comment).
 
-In list context, returns a line/column pair.
-
-THIS FUNCTION USUALLY DOESN'T WORK.
+In list context, returns a line/column pair. (Tab characters count as
+one column, not eight.)
 
 =cut
 

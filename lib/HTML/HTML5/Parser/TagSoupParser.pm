@@ -12,7 +12,7 @@ use strict;
 
 use Data::Dumper;
 
-our $VERSION='0.101';
+our $VERSION='0.102';
 use Error qw(:try);
 
 BEGIN
@@ -30,7 +30,7 @@ our $DATA;
 sub DATA
 {
 	my $object = shift;
-	my $oaddr  = refaddr($object);
+	my $oaddr  = $$object;
 	
 	$DATA->{$oaddr} ||= {};
   

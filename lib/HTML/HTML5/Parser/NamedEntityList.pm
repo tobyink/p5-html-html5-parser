@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::NamedEntityList;
 
-our $VERSION = '0.101';
+our $VERSION = '0.102';
 
 $HTML::HTML5::Parser::TagSoupParser::EntityChar = {
           "AElig" => "\306",
