@@ -1,166 +1,194 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rdf:RDF
-   xmlns:author="http://purl.org/NET/cpan-uri/person/"
-   xmlns:dbug="http://ontologi.es/doap-bugs#"
-   xmlns:dc="http://purl.org/dc/terms/"
-   xmlns:dcs="http://ontologi.es/doap-changeset#"
-   xmlns:foaf="http://xmlns.com/foaf/0.1/"
-   xmlns:my="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-   xmlns:toby="http://tobyinkster.co.uk/#"
-   xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
-   xmlns="http://usefulinc.com/ns/doap#">
-  <rdf:Description rdf:about="file:///home/tai/src/perlmods/HTML-HTML5-Parser/Changes.ttl">
-    <dc:creator rdf:resource="http://tobyinkster.co.uk/#i"/>
-    <dc:description xml:lang="en">Revision history for Perl extension HTML::HTML5::Parser.</dc:description>
-    <dc:subject rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/project"/>
-    <dc:title>Changes for HTML::HTML5::Parser</dc:title>
-  </rdf:Description>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-00_01">
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-01</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.00_01</revision>
-    <rdfs:label xml:lang="en">Developer preview</rdfs:label>
-  </Version>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01">
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-03</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.01</revision>
-    <rdfs:label xml:lang="en">Original version</rdfs:label>
-  </Version>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02">
-    <dcs:changeset>
-      <rdf:Description>
-        <dcs:item>
-          <rdf:Description>
-            <rdfs:label xml:lang="en">Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package.</rdfs:label>
-          </rdf:Description>
-        </dcs:item>
-        <dcs:item>
-          <dcs:Addition>
-            <rdfs:label xml:lang="en">Bundle the html2xhtml tool.</rdfs:label>
-          </dcs:Addition>
-        </dcs:item>
-        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01"/>
-      </rdf:Description>
-    </dcs:changeset>
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-16</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.02</revision>
-  </Version>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03">
-    <dcs:changeset>
-      <rdf:Description>
-        <dcs:item>
-          <dcs:Bugfix>
-            <rdfs:comment>Thanks shellac</rdfs:comment>
-            <rdfs:label xml:lang="en">Module didn't use URI::file properly.</rdfs:label>
-          </dcs:Bugfix>
-        </dcs:item>
-        <dcs:item>
-          <dcs:Update>
-            <rdfs:label xml:lang="en">Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)</rdfs:label>
-          </dcs:Update>
-        </dcs:item>
-        <dcs:item>
-          <dcs:Update>
-            <rdfs:label xml:lang="en">Copyright 2010.</rdfs:label>
-          </dcs:Update>
-        </dcs:item>
-        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02"/>
-      </rdf:Description>
-    </dcs:changeset>
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-01-15</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.03</revision>
-  </Version>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04">
-    <dcs:changeset>
-      <rdf:Description>
-        <dcs:item>
-          <dcs:Update>
-            <rdfs:label xml:lang="en">Catch up to revision cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc (2010-02-28) upstream.</rdfs:label>
-          </dcs:Update>
-        </dcs:item>
-        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
-      </rdf:Description>
-    </dcs:changeset>
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-04-21</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.04.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.04</revision>
-  </Version>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100">
-    <dcs:changeset>
-      <rdf:Description>
-        <dcs:item>
-          <dcs:Bugfix>
-            <rdfs:label xml:lang="en">Minor bugfixes.</rdfs:label>
-          </dcs:Bugfix>
-        </dcs:item>
-        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
-      </rdf:Description>
-    </dcs:changeset>
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-23</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.100.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.100</revision>
-  </Version>
-  <Version rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101">
-    <dcs:changeset>
-      <rdf:Description>
-        <dcs:item>
-          <dcs:Bugfix>
-            <dcs:fixes>
-              <rdf:Description>
-                <dbug:reporter rdf:resource="http://purl.org/NET/cpan-uri/person/gwilliams"/>
-                <rdfs:label xml:lang="en">Wide characters in DOM tree.</rdfs:label>
-              </rdf:Description>
-            </dcs:fixes>
-            <rdfs:label xml:lang="en">UTF-8 fix.</rdfs:label>
-          </dcs:Bugfix>
-        </dcs:item>
-        <dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
-      </rdf:Description>
-    </dcs:changeset>
-    <dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-30</dc:issued>
-    <file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.101.tar.gz"/>
-    <revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.101</revision>
-  </Version>
-  <Project rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/project">
-    <bug-database rdf:resource="http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser"/>
-    <created rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-11-26</created>
-    <developer rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/dev-wakaba"/>
-    <developer rdf:resource="http://tobyinkster.co.uk/#i"/>
-    <documenter rdf:resource="http://tobyinkster.co.uk/#i"/>
-    <download-page rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Parser/"/>
-    <homepage rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Parser/"/>
-    <license rdf:resource="http://dev.perl.org/licenses/"/>
-    <maintainer rdf:resource="http://tobyinkster.co.uk/#i"/>
-    <name>HTML-HTML5-Parser</name>
-    <programming-language>Perl</programming-language>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-00_01"/>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01"/>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02"/>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
-    <release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101"/>
-    <repository>
-      <SVNRepository>
-        <browse rdf:resource="http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Parser/"/>
-      </SVNRepository>
-    </repository>
-    <shortdesc xml:lang="en">parse HTML reliably</shortdesc>
-    <tester rdf:resource="http://tobyinkster.co.uk/#i"/>
-  </Project>
-  <foaf:Person rdf:about="http://tobyinkster.co.uk/#i">
-    <ns1:sameAs xmlns:ns1="http://www.w3.org/2002/07/owl#" rdf:resource="http://purl.org/NET/cpan-uri/person/tobyink"/>
-    <foaf:homepage rdf:resource="http://tobyinkster.co.uk/"/>
-    <foaf:mbox rdf:resource="mailto:tobyink@cpan.org"/>
-    <foaf:name>Toby Inkster</foaf:name>
-    <foaf:page rdf:resource="http://search.cpan.org/~tobyink/"/>
-  </foaf:Person>
-  <foaf:Person rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/dev-wakaba">
-    <foaf:name>Wakaba</foaf:name>
-  </foaf:Person>
+<rdf:RDF xmlns:dbug="http://ontologi.es/doap-bugs#" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcs="http://ontologi.es/doap-changeset#" xmlns:doap="http://usefulinc.com/ns/doap#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er0">
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er1"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er2"/>
+	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01"/>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er1">
+	<rdfs:label xml:lang="en">Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er10">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
+	<rdfs:label xml:lang="en">Minor bugfixes.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er11">
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er12"/>
+	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er12">
+	<dcs:fixes rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er13"/>
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
+	<rdfs:label xml:lang="en">UTF-8 fix.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er13">
+	<dbug:reporter rdf:resource="http://purl.org/NET/cpan-uri/person/gwilliams"/>
+	<rdfs:label xml:lang="en">Wide characters in DOM tree.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er14">
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er15"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er16"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er17"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er18"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er19"/>
+	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101"/>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er15">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
+	<rdfs:label xml:lang="en">Fix source_line method.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er16">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
+	<rdfs:label xml:lang="en">Catch up to revision f2c921a886ab0b3dfb8d21b82525e98a4a921ad4 (2010-10-11) upstream.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er17">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
+	<rdfs:label xml:lang="en">Allow &lt;object> element to appear in &lt;head> if document has an HTML4 doctype. This is a willful violation of the HTML5 parsing algorithm. (The &lt;object> may have &lt;param> elements as children, as well as any children that would normally be allowed in the &lt;head> of the document, such as &lt;meta>; any other content is treated as the beginning of the &lt;body>, and thus closes &lt;object> and &lt;head>. That's slightly looser than the HTML 4 spec which says only &lt;param> should be used, but stricter than the HTML 4 DTD which allows pretty much anything in there!)</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er18">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
+	<rdfs:label xml:lang="en">Support &lt;figcaption> element.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er19">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
+	<rdfs:label xml:lang="en">Support &lt;summary> element.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er2">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
+	<rdfs:label xml:lang="en">Bundle the html2xhtml tool.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er20">
+	<doap:browse rdf:resource="http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Parser/"/>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#SVNRepository"/>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er3">
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er4"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er5"/>
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er6"/>
+	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02"/>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er4">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
+	<rdfs:comment>Thanks shellac</rdfs:comment>
+	<rdfs:label xml:lang="en">Module didn't use URI::file properly.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er5">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
+	<rdfs:label xml:lang="en">Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er6">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
+	<rdfs:label xml:lang="en">Copyright 2010.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er7">
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er8"/>
+	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er8">
+	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
+	<rdfs:label xml:lang="en">Catch up to revision cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc (2010-02-28) upstream.</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er9">
+	<dcs:item rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er10"/>
+	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
+</rdf:Description>
+<rdf:Description rdf:about="file:///home/tai/src/perlmods/HTML-HTML5-Parser/Changes.ttl">
+	<dc:creator rdf:resource="http://tobyinkster.co.uk/#i"/>
+	<dc:description xml:lang="en">Revision history for Perl extension HTML::HTML5::Parser.</dc:description>
+	<dc:subject rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/project"/>
+	<dc:title>Changes for HTML::HTML5::Parser</dc:title>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/dev-wakaba">
+	<rdf:type rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+	<foaf:name>Wakaba</foaf:name>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/project">
+	<doap:bug-database rdf:resource="http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser"/>
+	<doap:created rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-11-26</doap:created>
+	<doap:developer rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/dev-wakaba"/>
+	<doap:developer rdf:resource="http://tobyinkster.co.uk/#i"/>
+	<doap:documenter rdf:resource="http://tobyinkster.co.uk/#i"/>
+	<doap:download-page rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Parser/"/>
+	<doap:homepage rdf:resource="http://search.cpan.org/dist/HTML-HTML5-Parser/"/>
+	<doap:license rdf:resource="http://dev.perl.org/licenses/"/>
+	<doap:maintainer rdf:resource="http://tobyinkster.co.uk/#i"/>
+	<doap:name>HTML-HTML5-Parser</doap:name>
+	<doap:programming-language>Perl</doap:programming-language>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-00_01"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101"/>
+	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-102"/>
+	<doap:repository rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er20"/>
+	<doap:shortdesc xml:lang="en">parse HTML reliably</doap:shortdesc>
+	<doap:tester rdf:resource="http://tobyinkster.co.uk/#i"/>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Project"/>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-00_01">
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-01</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.00_01</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+	<rdfs:label xml:lang="en">Developer preview</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01">
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-03</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.01</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+	<rdfs:label xml:lang="en">Original version</rdfs:label>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02">
+	<dcs:changeset rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er0"/>
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-16</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.02</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03">
+	<dcs:changeset rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er3"/>
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-01-15</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.03</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04">
+	<dcs:changeset rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er7"/>
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-04-21</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.04.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.04</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100">
+	<dcs:changeset rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er9"/>
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-23</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.100.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.100</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101">
+	<dcs:changeset rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er11"/>
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-30</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.101.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.101</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+</rdf:Description>
+<rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-102">
+	<dcs:changeset rdf:nodeID="rA3377D76242611E0B2948B9F37815A8Er14"/>
+	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-01-19</dc:issued>
+	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.102.tar.gz"/>
+	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.102</doap:revision>
+	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
+</rdf:Description>
+<rdf:Description xmlns:ns1="http://www.w3.org/2002/07/owl#" rdf:about="http://tobyinkster.co.uk/#i">
+	<rdf:type rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+	<ns1:sameAs rdf:resource="http://purl.org/NET/cpan-uri/person/tobyink"/>
+	<foaf:homepage rdf:resource="http://tobyinkster.co.uk/"/>
+	<foaf:mbox rdf:resource="mailto:tobyink@cpan.org"/>
+	<foaf:name>Toby Inkster</foaf:name>
+	<foaf:page rdf:resource="http://search.cpan.org/~tobyink/"/>
+</rdf:Description>
 </rdf:RDF>

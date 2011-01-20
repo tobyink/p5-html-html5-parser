@@ -1,9 +1,6 @@
 NAME
     HTML::HTML5::Parser - parse HTML reliably
 
-VERSION
-    0.100
-
 SYNOPSIS
       use HTML::HTML5::Parser;
   
@@ -118,9 +115,8 @@ DESCRIPTION
             source code that started a particular node (element, attribute
             or comment).
 
-            In list context, returns a line/column pair.
-
-            THIS FUNCTION USUALLY DOESN'T WORK.
+            In list context, returns a line/column pair. (Tab characters
+            count as one column, not eight.)
 
 SEE ALSO
     <http://suika.fam.cx/www/markup/html/whatpm/Whatpm/HTML.html>
@@ -129,7 +125,7 @@ AUTHOR
     Toby Inkster, <tobyink@cpan.org>
 
 COPYRIGHT AND LICENSE
-    Copyright (C) 2007-2009 by Wakaba
+    Copyright (C) 2007-2010 by Wakaba
 
     Copyright (C) 2009-2010 by Toby Inkster
 

@@ -4,13 +4,11 @@ package HTML::HTML5::Parser::TagSoupParser;
 # on manakai, and towards CPAN and XML::LibXML.
 
 # http://suika.fam.cx/gate/git/wi/manakai.git/history/HEAD:/lib/Whatpm/HTML.pm
-# CAUGHT UP TO bf7d3d81d0d1116c301a7224d3e232b7e403baa3 2010-10-10 "added notes"
+# CAUGHT UP TO f2c921a886ab0b3dfb8d21b82525e98a4a921ad4
 
 use 5.008001;
 use strict;
 #use warnings;
-
-use Data::Dumper;
 
 our $VERSION='0.102';
 use Error qw(:try);

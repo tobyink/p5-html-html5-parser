@@ -4,10 +4,6 @@ package HTML::HTML5::Parser;
 
 HTML::HTML5::Parser - parse HTML reliably
 
-=head1 VERSION
-
-0.100
-
 =head1 SYNOPSIS
 
   use HTML::HTML5::Parser;
@@ -405,7 +401,7 @@ Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2007-2009 by Wakaba
+Copyright (C) 2007-2010 by Wakaba
 
 Copyright (C) 2009-2010 by Toby Inkster
 
