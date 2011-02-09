@@ -10,7 +10,7 @@ use 5.008001;
 use strict;
 #use warnings;
 
-our $VERSION='0.102';
+our $VERSION='0.103';
 use Error qw(:try);
 
 BEGIN
@@ -604,8 +604,8 @@ sub parse_byte_stream ($$$$;$$) {
          byte_buffer => \ $buffer->{buffer});
     
     if ($char_stream) { # if supported
-      if ($charset->{category} & Message::Charset::Info::CHARSET_CATEGORY_ASCII_COMPAT () or
-          $charset->{category} & Message::Charset::Info::CHARSET_CATEGORY_UTF16 ()) {
+      if ($charset->{category} & HTML::HTML5::Parser::Charset::Info::CHARSET_CATEGORY_ASCII_COMPAT () or
+          $charset->{category} & HTML::HTML5::Parser::Charset::Info::CHARSET_CATEGORY_UTF16 ()) {
         #
       } else {
         return;

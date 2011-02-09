@@ -48,7 +48,7 @@ my:v_0-02
 		dcs:versus my:v_0-01 ;
 		dcs:item
 			[ rdfs:label "Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package."@en ] ,
-			[ rdfs:label "Bundle the html2xhtml tool."@en ; a dcs:Addition ]
+			[ rdfs:label "Bundle the html2xhtml tool."@en ; a dcs:Addition , dcs:Packaging ]
 		] .
 
 my:v_0-03
@@ -61,8 +61,8 @@ my:v_0-03
 		dcs:versus my:v_0-02 ;
 		dcs:item
 			[ rdfs:label "Module didn't use URI::file properly."@en ; a dcs:Bugfix ; rdfs:comment "Thanks shellac" ] ,
-			[ rdfs:label "Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)"@en ; a dcs:Update ] ,
-			[ rdfs:label "Copyright 2010."@en ; a dcs:Update ]
+			[ rdfs:label "Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)"@en ; a dcs:Update , dcs:Packaging ] ,
+			[ rdfs:label "Copyright 2010."@en ; a dcs:Update , dcs:Documentation ]
 		] .
 
 my:v_0-04
@@ -117,6 +117,19 @@ my:v_0-102
 			[ rdfs:label "Support <summary> element."@en ; a dcs:Addition ]
 		] .
 
+my:v_0-103
+
+	a               :Version ;
+	dc:issued       "2011-02-09"^^xsd:date ;
+	:revision       "0.103"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.103.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-101 ;
+		dcs:item
+			[ rdfs:label "Copyright 2011."@en ; a dcs:Update , dcs:Documentation ] ,
+			[ rdfs:label "TagSoupParser.pm called a method that is renamed between this distribution and upstream using its upstream name."@en ; a dcs:Bugfix ]
+		] .
+
 #############################################################
 
 my:project
@@ -136,7 +149,7 @@ my:project
 	:created        "2009-11-26"^^xsd:date ;
 	:license        <http://dev.perl.org/licenses/> ;
 	:release        my:v_0-00_01 , my:v_0-01 , my:v_0-02 , my:v_0-03 , my:v_0-04 ,
-	                my:v_0-100 , my:v_0-101 , my:v_0-102 .
+	                my:v_0-100 , my:v_0-101 , my:v_0-102 , my:v_0-103 .
 
 #############################################################
 
@@ -152,6 +165,7 @@ toby:i
 my:dev-wakaba
 
 	a               foaf:Person ;
-	foaf:name       "Wakaba" .
+	foaf:name       "Wakaba" ;
+	foaf:page       <http://suika.fam.cx/>.
 
 #############################################################

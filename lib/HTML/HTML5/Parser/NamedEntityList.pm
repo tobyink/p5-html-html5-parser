@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::NamedEntityList;
 
-our $VERSION = '0.102';
+our $VERSION = '0.103';
 
 $HTML::HTML5::Parser::TagSoupParser::EntityChar = {
           "AElig" => "\306",
@@ -2264,7 +2264,7 @@ and Opera Software ASA.
 
 Copyright 2007-2010 Wakaba <w@suika.fam.cx>.
 
-Copyright 2009-2010 Toby Inkster <tobyink@cpan.org>.
+Copyright 2009-2011 Toby Inkster <tobyink@cpan.org>.
 
 You are granted a license to use, reproduce and create derivative works 
 of this document.

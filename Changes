@@ -10,6 +10,11 @@ Home page:    <http://search.cpan.org/dist/HTML-HTML5-Parser/>
 Bug tracker:  <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser>
 Maintainer:   Toby Inkster <mailto:tobyink@cpan.org>
 
+0.103 [2011-02-09]
+ - (Bugfix) TagSoupParser.pm called a method that is renamed between this
+   distribution and upstream using its upstream name.
+ - (Update) Copyright 2011.
+
 0.102 [2011-01-19]
  - (Addition) Allow <object> element to appear in <head> if document has an
    HTML4 doctype. This is a willful violation of the HTML5 parsing

@@ -26,7 +26,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.102';
+our $VERSION = '0.103';
 
 use Carp;
 use HTML::HTML5::Parser::TagSoupParser;
@@ -403,7 +403,7 @@ Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
 
 Copyright (C) 2007-2010 by Wakaba
 
-Copyright (C) 2009-2010 by Toby Inkster
+Copyright (C) 2009-2011 by Toby Inkster
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.1 or,
