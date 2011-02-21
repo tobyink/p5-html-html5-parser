@@ -1061,7 +1061,7 @@ sub _tree_construction_initial ($) {
 
     # TOBYINK
 		DATA($self->{'document'}, isHTML4 => 1)
-			if ($token->{pubid} =~ /html 4/i or $token->{sysid} =~ /html4/i);
+			if (($token->{pubid}||'') =~ /html 4/i or ($token->{sysid}||'') =~ /html4/i);
 
       if ($token->{quirks} or $doctype_name ne 'html') {
         
@@ -2509,7 +2509,7 @@ sub _tree_construction_main ($) {
 
     # BEGIN:TOBYINK
     if ($self->{insertion_mode} == IN_HEAD_IM and
-        $token->{tag_name} eq 'object' and
+        ($token->{tag_name}||'') eq 'object' and
         $token->{type} == END_TAG_TOKEN and
         DATA($self->{'document'}, 'isHTML4')) {
           
