@@ -1,3 +1,4 @@
+TODO
 Changes
 Changes.ttl
 Changes.xml
@@ -21,7 +22,6 @@ lib/HTML/HTML5/Parser/Tokenizer.pm
 
 script/html2xhtml
 
-t/00sig.t
 t/01basic.t
 t/02html_4.t
 
