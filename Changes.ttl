@@ -138,10 +138,10 @@ my:project
 	:name           "HTML-HTML5-Parser" ;
 	:shortdesc      "parse HTML reliably"@en ;
 	:programming-language  "Perl" ;
-	:homepage       <http://search.cpan.org/dist/HTML-HTML5-Parser/> ;
-	:download-page  <http://search.cpan.org/dist/HTML-HTML5-Parser/> ;
+	:homepage       <https://metacpan.org/release/HTML-HTML5-Parser> ;
+	:download-page  <https://metacpan.org/release/HTML-HTML5-Parser> ;
 	:bug-database   <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser> ;
-	:repository     [ a :SVNRepository ; :browse <http://goddamn.co.uk/viewvc/perlmods/HTML-HTML5-Parser/> ] ;
+	:repository     [ a :SVNRepository ; :browse <http://goddamn.co.uk/svn-web/perlmods/browse/HTML-HTML5-Parser/> ] ;
 	:maintainer     toby:i ;
 	:developer      toby:i , my:dev-wakaba ;
 	:documenter     toby:i ;
@@ -158,7 +158,7 @@ toby:i
 	a               foaf:Person ;
 	foaf:name       "Toby Inkster" ;
 	foaf:homepage   <http://tobyinkster.co.uk/> ;
-	foaf:page       <http://search.cpan.org/~tobyink/> ;
+	foaf:page       <https://metacpan.org/author/TOBYINK> ;
 	foaf:mbox       <mailto:tobyink@cpan.org> ;
 	<http://www.w3.org/2002/07/owl#sameAs> author:tobyink .
 
