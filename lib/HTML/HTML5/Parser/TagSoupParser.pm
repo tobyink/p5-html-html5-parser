@@ -10,7 +10,7 @@ use 5.008001;
 use strict;
 #use warnings;
 
-our $VERSION='0.103';
+our $VERSION='0.104';
 use Error qw(:try);
 
 BEGIN

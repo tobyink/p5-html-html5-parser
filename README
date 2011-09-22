@@ -88,6 +88,18 @@ DESCRIPTION
     The module provides a few additional methods to obtain additional,
     non-DOM data from DOM nodes.
 
+    "error_handler"
+            Get/set an error handling function. Must be set to a coderef or
+            undef.
+
+            The error handling function will be called with a single
+            parameter, a HTML::HTML5::Parser::Error object.
+
+    "errors"
+            Returns a list of errors that occurred during the last parse.
+
+            See HTML::HTML5::Parser::Error.
+
     "compat_mode"
               $mode = $parser->compat_mode( $doc );
 
@@ -125,7 +137,7 @@ AUTHOR
     Toby Inkster, <tobyink@cpan.org>
 
 COPYRIGHT AND LICENSE
-    Copyright (C) 2007-2010 by Wakaba
+    Copyright (C) 2007-2011 by Wakaba
 
     Copyright (C) 2009-2011 by Toby Inkster
 

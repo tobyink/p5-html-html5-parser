@@ -140,7 +140,8 @@ my:v_0-104
 		dcs:versus my:v_0-103 ;
 		dcs:item
 			[ rdfs:label "Catch up to revision d81fcb920a1a3c351149cd66a64bf1b8ae14a172 (2011-08-21) upstream."@en ; a dcs:Update ] ,
-			[ rdfs:label "Support <track> element."@en ; a dcs:Addition ]
+			[ rdfs:label "Support <track> element."@en ; a dcs:Addition ] ,
+			[ rdfs:label "Some error handling stuff."@en ; a dcs:Addition ]
 		] .
 
 
@@ -163,7 +164,7 @@ my:project
 	:created        "2009-11-26"^^xsd:date ;
 	:license        <http://dev.perl.org/licenses/> ;
 	:release        my:v_0-00_01 , my:v_0-01 , my:v_0-02 , my:v_0-03 , my:v_0-04 ,
-	                my:v_0-100 , my:v_0-101 , my:v_0-102 , my:v_0-103 .
+	                my:v_0-100 , my:v_0-101 , my:v_0-102 , my:v_0-103 , my:v_0-104  .
 
 #############################################################
 

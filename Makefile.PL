@@ -31,7 +31,6 @@ write_doap_changes_xml;
 
 install_script 'html2xhtml';
 
-include 'Test::Signature';
 auto_install;
 WriteAll(
 	'meta' => 1,

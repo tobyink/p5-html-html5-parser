@@ -6,16 +6,26 @@ HTML-HTML5-Parser
 =================
 
 Created:      2009-11-26
-Home page:    <http://search.cpan.org/dist/HTML-HTML5-Parser/>
+Home page:    <https://metacpan.org/release/HTML-HTML5-Parser>
 Bug tracker:  <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser>
 Maintainer:   Toby Inkster <mailto:tobyink@cpan.org>
 
+0.104 [2011-09-22]
+ - (Addition) Some error handling stuff.
+ - (Addition) Support <track> element.
+ - (Update) Catch up to revision d81fcb920a1a3c351149cd66a64bf1b8ae14a172
+   (2011-08-21) upstream.
+
 0.103 [2011-02-09]
+ - (Documentation Update) Copyright 2011.
  - (Bugfix) TagSoupParser.pm called a method that is renamed between this
    distribution and upstream using its upstream name.
- - (Update) Copyright 2011.
 
 0.102 [2011-01-19]
+ - (Update) Catch up to revision f2c921a886ab0b3dfb8d21b82525e98a4a921ad4
+   (2010-10-11) upstream.
+ - (Addition) Support <summary> element.
+ - (Addition) Support <figcaption> element.
  - (Addition) Allow <object> element to appear in <head> if document has an
    HTML4 doctype. This is a willful violation of the HTML5 parsing
    algorithm. (The <object> may have <param> elements as children, as well
@@ -25,11 +35,7 @@ Maintainer:   Toby Inkster <mailto:tobyink@cpan.org>
    looser than the HTML 4 spec which says only <param> should be used, but
    stricter than the HTML 4 DTD which allows pretty much anything in
    there!)
- - (Addition) Support <figcaption> element.
- - (Addition) Support <summary> element.
  - (Bugfix) Fix source_line method.
- - (Update) Catch up to revision f2c921a886ab0b3dfb8d21b82525e98a4a921ad4
-   (2010-10-11) upstream.
 
 0.101 [2010-06-30]
  - (Bugfix) UTF-8 fix.
@@ -42,15 +48,15 @@ Maintainer:   Toby Inkster <mailto:tobyink@cpan.org>
    (2010-02-28) upstream.
 
 0.03 [2010-01-15]
+ - (Packaging Update) Upgrade distribution to my new packaging regime
+   (auto-generated changelogs, etc)
  - (Bugfix) Module didn't use URI::file properly.
- - (Update) Copyright 2010.
- - (Update) Upgrade distribution to my new packaging regime (auto-generated
-   changelogs, etc)
+ - (Documentation Update) Copyright 2010.
 
 0.02 [2009-12-16]
  - Replace Inline::Python encoding detection with weaker, but native Perl
    HTML::Encoding package.
- - (Addition) Bundle the html2xhtml tool.
+ - (Addition Packaging) Bundle the html2xhtml tool.
 
 0.01 [2009-12-03] # Original version
 

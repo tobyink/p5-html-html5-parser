@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::NamedEntityList;
 
-our $VERSION = '0.103';
+our $VERSION = '0.104';
 
 $HTML::HTML5::Parser::TagSoupParser::EntityChar = {
           "AElig" => "\306",
@@ -2262,7 +2262,7 @@ L<http://www.whatwg.org/specs/web-apps/current-work/complete.html#named-characte
 (C) Copyright 2004-2007 Apple Computer, Inc., Mozilla Foundation,
 and Opera Software ASA.
 
-Copyright 2007-2010 Wakaba <w@suika.fam.cx>.
+Copyright 2007-2011 Wakaba <w@suika.fam.cx>.
 
 Copyright 2009-2011 Toby Inkster <tobyink@cpan.org>.
 

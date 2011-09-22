@@ -19,6 +19,7 @@ lib/HTML/HTML5/Parser/NamedEntityList.pm
 lib/HTML/HTML5/Parser.pm
 lib/HTML/HTML5/Parser/TagSoupParser.pm
 lib/HTML/HTML5/Parser/Tokenizer.pm
+lib/HTML/HTML5/Parser/Error.pm
 
 script/html2xhtml
 
@@ -39,4 +40,3 @@ inc/Module/Install/ReadmeFromPod.pm
 inc/Module/Install/Scripts.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
-inc/Test/Signature.pm

@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
 use strict;
-our $VERSION='0.103';
+our $VERSION='0.104';
 
 ## This module implements the tokenization phase of both HTML5 and
 ## XML5.  Notes like this are usually based on the latest HTML
@@ -8822,7 +8822,7 @@ sub _get_next_token ($) {
 
 1;
 
-# Copyright 2007-2010 Wakaba <w@suika.fam.cx>.
+# Copyright 2007-2011 Wakaba <w@suika.fam.cx>.
 #
 # This library is free software; you can redistribute it and/or modify
 # it under the same terms as Perl itself.

@@ -21,6 +21,11 @@ elsif ($ENV{HTML_OUTPUT} =~ /html/i)
 {
 	print HTML::HTML5::Writer->new->document($p->parse_string($h));
 }
+elsif ($ENV{HTML_OUTPUT} =~ /dump/i)
+{
+	$p->parse_string($h);
+	print Dumper($p);
+}
 else
 {
 	print $p->parse_string($h)->toString;

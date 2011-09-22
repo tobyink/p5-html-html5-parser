@@ -26,9 +26,10 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.103';
+our $VERSION = '0.104';
 
 use Carp;
+use HTML::HTML5::Parser::Error;
 use HTML::HTML5::Parser::TagSoupParser;
 use LWP::UserAgent;
 use URI::file;
@@ -222,16 +223,16 @@ sub parse_string
 	if (defined $opts->{'encoding'} || 1)
 	{
 		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($opts->{'encoding'}, $text, $dom, sub{
-			my $err = \@_;
-			$self->{onerror}->(@_) if $self->{onerror};
+			my $err = HTML::HTML5::Parser::Error->new(@_);
+			$self->{error_handler}->($err) if $self->{error_handler};
 			push @{$self->{'errors'}}, $err;
 			});
 	}
 	else
 	{
 		HTML::HTML5::Parser::TagSoupParser->parse_char_string($text, $dom, sub{
-			my $err = \@_;
-			$self->{onerror}->(@_) if $self->{onerror};
+			my $err = HTML::HTML5::Parser::Error->new(@_);
+			$self->{error_handler}->($err) if $self->{error_handler};
 			push @{$self->{'errors'}}, $err;
 			});
 	}
@@ -302,6 +303,36 @@ The module provides a few additional methods to obtain additional,
 non-DOM data from DOM nodes.
 
 =over 8
+
+=item C<error_handler>
+
+Get/set an error handling function. Must be set to a coderef or undef.
+
+The error handling function will be called with a single parameter, a
+L<HTML::HTML5::Parser::Error> object.
+
+=cut
+
+sub error_handler
+{
+	my $self = shift;
+	$self->{error_handler} = shift if @_;
+	return $self->{error_handler};
+}
+
+=item C<errors>
+
+Returns a list of errors that occurred during the last parse.
+
+See L<HTML::HTML5::Parser::Error>.
+
+=cut
+
+sub errors
+{
+	my $self = shift;
+	return @{ $self->{errors} };
+}
 
 =item C<compat_mode>
 
@@ -406,7 +437,7 @@ Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2007-2010 by Wakaba
+Copyright (C) 2007-2011 by Wakaba
 
 Copyright (C) 2009-2011 by Toby Inkster
 
