@@ -228,7 +228,6 @@ sub BOGUS_MD_STATE () { 101 }
 ## of tokenization state constants.  See Whatpm::HTML for the full
 ## list and the descriptions for constants.
 
-sub IN_FOREIGN_CONTENT_IM () { 0b100000000000 }
 sub FOREIGN_EL () { 0b1_00000000000 }
 
 ## ------ Character reference mappings ------
@@ -394,10 +393,15 @@ $Action->[DATA_STATE]->[KEY_EOF_CHAR] = {
   emit => END_OF_FILE_TOKEN,
   reconsume => 1,
 };
+$Action->[DATA_STATE]->[0x0000] = {
+  name => 'data null',
+  emit => CHARACTER_TOKEN,
+  error => 'NULL',
+};
 $Action->[DATA_STATE]->[KEY_ELSE_CHAR] = {
   name => 'data else',
   emit => CHARACTER_TOKEN,
-  emit_data_read_until => q{<&},
+  emit_data_read_until => qq{\x00<&},
 };
   $XMLAction->[DATA_STATE]->[0x005D] = { # ]
     name => 'data ]',
@@ -407,7 +411,7 @@ $Action->[DATA_STATE]->[KEY_ELSE_CHAR] = {
   $XMLAction->[DATA_STATE]->[KEY_ELSE_CHAR] = {
     name => 'data else xml',
     emit => CHARACTER_TOKEN,
-    emit_data_read_until => q{<&\]},
+    emit_data_read_until => qq{\x00<&\]},
   };
 $Action->[RCDATA_STATE]->[0x0026] = {
   name => 'rcdata &',
@@ -419,32 +423,41 @@ $Action->[RCDATA_STATE]->[0x003C] = {
   state => RCDATA_LT_STATE,
 };
 $Action->[RCDATA_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[RCDATA_STATE]->[0x0000] = {
+  name => 'rcdata null',
+  emit => CHARACTER_TOKEN,
+  emit_data => "\x{FFFD}",
+  error => 'NULL',
+};
 $Action->[RCDATA_STATE]->[KEY_ELSE_CHAR] = {
   name => 'rcdata else',
   emit => CHARACTER_TOKEN,
-  emit_data_read_until => q{<&},
+  emit_data_read_until => qq{\x00<&},
 };
 $Action->[RAWTEXT_STATE]->[0x003C] = {
   name => 'rawtext <',
   state => RAWTEXT_LT_STATE,
 };
 $Action->[RAWTEXT_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[RAWTEXT_STATE]->[0x0000] = $Action->[RCDATA_STATE]->[0x0000];
 $Action->[RAWTEXT_STATE]->[KEY_ELSE_CHAR] = {
   name => 'rawtext else',
   emit => CHARACTER_TOKEN,
-  emit_data_read_until => q{<},
+  emit_data_read_until => qq{\x00<},
 };
 $Action->[SCRIPT_DATA_STATE]->[0x003C] = {
   name => 'script data <',
   state => SCRIPT_DATA_LT_STATE,
 };
 $Action->[SCRIPT_DATA_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[SCRIPT_DATA_STATE]->[0x0000] = $Action->[RAWTEXT_STATE]->[0x0000];
 $Action->[SCRIPT_DATA_STATE]->[KEY_ELSE_CHAR] = $Action->[RAWTEXT_STATE]->[KEY_ELSE_CHAR];
 $Action->[PLAINTEXT_STATE]->[KEY_EOF_CHAR] = $Action->[DATA_STATE]->[KEY_EOF_CHAR];
+$Action->[PLAINTEXT_STATE]->[0x0000] = $Action->[RAWTEXT_STATE]->[0x0000];
 $Action->[PLAINTEXT_STATE]->[KEY_ELSE_CHAR] = {
   name => 'plaintext else',
   emit => CHARACTER_TOKEN,
-  emit_data_read_until => q{},
+  emit_data_read_until => qq{\x00},
 };
 # "Tag open state" is known as "tag state" in XML5.
 $Action->[TAG_OPEN_STATE]->[0x0021] = {
@@ -508,6 +521,16 @@ $Action->[TAG_OPEN_STATE]->[0x003E] = { # >
   emit_delta => 1,
 };
 $Action->[TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = $Action->[TAG_OPEN_STATE]->[0x003E];
+  $XMLAction->[TAG_OPEN_STATE]->[0x0000] = {
+    name => 'tag open null xml',
+    ct => {
+      type => START_TAG_TOKEN,
+      delta => 1,
+      append_tag_name => 0xFFFD,
+    },
+    error => 'NULL',
+    state => TAG_NAME_STATE,
+  };
   ## XML5: "<:" has a parse error.
   $XMLAction->[TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = {
     name => 'tag open else xml',
@@ -628,7 +651,7 @@ $Action->[CLOSE_TAG_OPEN_STATE]->[0x003E] = {
   ## not XML5.
   
   ## NOTE: A short end tag token.
-  
+
   $XMLAction->[CLOSE_TAG_OPEN_STATE]->[0x003E] = {
     name => 'end tag open > xml',
     error => 'empty end tag',
@@ -666,6 +689,16 @@ $Action->[CLOSE_TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = {
   ## the |data| of the comment token generated from the bogus end tag,
   ## as defined in the "bogus comment state" entry.
 };
+  $XMLAction->[CLOSE_TAG_OPEN_STATE]->[0x0000] = {
+    name => 'end tag open null xml',
+    ct => {
+      type => END_TAG_TOKEN,
+      delta => 2,
+      append_tag_name => 0xFFFD,
+    },
+    error => 'NULL',
+    state => TAG_NAME_STATE, ## XML5: "end tag name state".
+  };
   ## XML5: "</:" is a parse error.
   $XMLAction->[CLOSE_TAG_OPEN_STATE]->[KEY_ELSE_CHAR] = {
     name => 'end tag open else xml',
@@ -710,6 +743,13 @@ $Action->[TAG_NAME_STATE]->[KEY_EOF_CHAR] = {
 $Action->[TAG_NAME_STATE]->[0x002F] = {
   name => 'tag name /',
   state => SELF_CLOSING_START_TAG_STATE,
+};
+$Action->[TAG_NAME_STATE]->[0x0000] = {
+  name => 'tag name null',
+  ct => {
+    append_tag_name => 0xFFFD,
+  },
+  error => 'NULL',
 };
 $Action->[TAG_NAME_STATE]->[KEY_ELSE_CHAR] = {
   name => 'tag name else',
@@ -816,6 +856,18 @@ $Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[KEY_EOF_CHAR] = {
   error => 'eof in escaped script data', # XXXdocumentation
   state => DATA_STATE,
   reconsume => 1,
+};
+$Action->[SCRIPT_DATA_ESCAPED_STATE]->[0x0000] =
+$Action->[SCRIPT_DATA_ESCAPED_DASH_STATE]->[0x0000] =
+$Action->[SCRIPT_DATA_ESCAPED_DASH_DASH_STATE]->[0x0000] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_STATE]->[0x0000] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE]->[0x0000] =
+$Action->[SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE]->[0x0000] = {
+  name => 'script data escaped null',
+  emit => CHARACTER_TOKEN,
+  emit_data => "\x{FFFD}",
+  error => 'NULL',
+  state => SCRIPT_DATA_ESCAPED_STATE,
 };
 $Action->[SCRIPT_DATA_ESCAPED_STATE]->[KEY_ELSE_CHAR] = {
   name => 'script data escaped else',
@@ -961,6 +1013,12 @@ $Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x003D] = {
   ca => {set_name => 0x0000},
   state => ATTRIBUTE_NAME_STATE,
 };
+$Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[0x0000] = {
+  name => 'before attr name null',
+  ca => {set_name => 0xFFFD},
+  error => 'NULL',
+  state => ATTRIBUTE_NAME_STATE,
+};
           ## XML5: ":" raises a parse error and is ignored.
 $Action->[BEFORE_ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
   name => 'before attr name else',
@@ -1025,6 +1083,11 @@ $Action->[ATTRIBUTE_NAME_STATE]->[0x003C] = {
   error => 'bad attribute name', ## XML5: Not a parse error.
   ca => {name => 0x0000},
 };
+$Action->[ATTRIBUTE_NAME_STATE]->[0x0000] = {
+  name => 'attr name null',
+  ca => {name => 0xFFFD},
+  error => 'NULL',
+};
 $Action->[ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
   name => 'attr name else',
   ca => {name => 0x0000},
@@ -1082,6 +1145,13 @@ $Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x003C] = {
   ca => {set_name => 0x0000},
   state => ATTRIBUTE_NAME_STATE,
 };
+$Action->[AFTER_ATTRIBUTE_NAME_STATE]->[0x0000] = {
+  name => q[after attr name else],
+  ca => {set_name => 0xFFFD},
+  error => 'NULL',
+  #error2(xml) => 'no attr value', ## XML5: Not a parse error.
+  state => ATTRIBUTE_NAME_STATE,
+};
 $Action->[AFTER_ATTRIBUTE_NAME_STATE]->[KEY_ELSE_CHAR] = {
   name => q[after attr name else],
   ca => {set_name => 0x0000},
@@ -1134,6 +1204,13 @@ $Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x0060] = {
   error => 'bad attribute value', ## XML5: Not a parse error.
   #error2(xml) => 'unquoted attr value', ## XML5: Not a parse error.
   ca => {value => 1},
+  state => ATTRIBUTE_VALUE_UNQUOTED_STATE,
+};
+$Action->[BEFORE_ATTRIBUTE_VALUE_STATE]->[0x0000] = {
+  name => 'before attr value null',
+  ca => {value => "\x{FFFD}"},
+  error => 'NULL',
+  #error2(xml) => 'unquoted attr value', ## XML5: Not a parse error.
   state => ATTRIBUTE_VALUE_UNQUOTED_STATE,
 };
 $XMLAction->[BEFORE_ATTRIBUTE_VALUE_STATE]->[KEY_ELSE_CHAR] = {
@@ -1284,7 +1361,7 @@ sub _get_next_token ($) {
       
       if (my $aca = $action->{ca}) {
         if ($aca->{value}) {
-          $self->{ca}->{value} .= chr $nc;
+          $self->{ca}->{value} .= $aca->{value} ne '1' ? $aca->{value} : chr $nc;
         } elsif (defined $aca->{name}) {
           $self->{ca}->{name} .= chr ($nc + $aca->{name});
         } elsif (defined $aca->{set_name}) {
@@ -1650,6 +1727,22 @@ sub _get_next_token ($) {
         } else {
           die "$0: $self->{ct}->{type}: Unknown token type";
         }
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ca}->{value} .= "\x{FFFD}";
+        ## Stay in the state
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         ## XML5 [ATTLIST]: Not defined yet.
         if ($self->{is_xml} and $nc == 0x003C) { # <
@@ -1661,7 +1754,7 @@ sub _get_next_token ($) {
         }
         $self->{ca}->{value} .= chr ($nc);
         $self->{read_until}->($self->{ca}->{value},
-                              qq["&<\x09\x0C\x20],
+                              qq[\x00"&<\x09\x0C\x20],
                               length $self->{ca}->{value});
 
         ## Stay in the state
@@ -1787,6 +1880,22 @@ sub _get_next_token ($) {
         } else {
           die "$0: $self->{ct}->{type}: Unknown token type";
         }
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ca}->{value} .= "\x{FFFD}";
+        ## Stay in the state
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         ## XML5 [ATTLIST]: Not defined yet.
         if ($self->{is_xml} and $nc == 0x003C) { # <
@@ -1798,7 +1907,7 @@ sub _get_next_token ($) {
         }
         $self->{ca}->{value} .= chr ($nc);
         $self->{read_until}->($self->{ca}->{value},
-                              qq['&<\x09\x0C\x20],
+                              qq[\x00'&<\x09\x0C\x20],
                               length $self->{ca}->{value});
 
         ## Stay in the state
@@ -1969,6 +2078,22 @@ sub _get_next_token ($) {
         } else {
           die "$0: $self->{ct}->{type}: Unknown token type";
         }
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ca}->{value} .= "\x{FFFD}";
+        ## Stay in the state
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         if ({
              0x0022 => 1, # "
@@ -1985,7 +2110,7 @@ sub _get_next_token ($) {
         }
         $self->{ca}->{value} .= chr ($nc);
         $self->{read_until}->($self->{ca}->{value},
-                              qq["'=&` \x09\x0C<>],
+                              qq[\x00"'=&` \x09\x0C<>],
                               length $self->{ca}->{value});
 
         ## Stay in the state
@@ -2081,11 +2206,26 @@ sub _get_next_token ($) {
 
         return  ($self->{ct}); # comment
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{data} .= "\x{FFFD}"; # comment
+        ## Stay in the state.
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{data} .= chr ($nc); # comment
         $self->{read_until}->($self->{ct}->{data},
-                              q[>],
+                              qq[\x00>],
                               length $self->{ct}->{data});
 
         ## Stay in the state.
@@ -2138,10 +2278,7 @@ sub _get_next_token ($) {
     }
   
         redo A;
-      } elsif ((($self->{insertion_mode} & IN_FOREIGN_CONTENT_IM and
-                 $self->{open_elements}->[-1]->[1] & FOREIGN_EL) or
-                $self->{is_xml}) and
-               $nc == 0x005B) { # [
+#               $nc == 0x005B) { # [
                         
         $self->{state} = MD_CDATA_STATE;
         $self->{kwd} = '[';
@@ -2375,6 +2512,22 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ct}->{data} .= "\x{FFFD}"; # comment
+        $self->{state} = COMMENT_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{data} # comment
@@ -2447,6 +2600,22 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ct}->{data} .= "-\x{FFFD}"; # comment
+        $self->{state} = COMMENT_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{data} # comment
@@ -2497,11 +2666,26 @@ sub _get_next_token ($) {
         return  ($self->{ct}); # comment
 
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ct}->{data} .= "\x{FFFD}"; # comment
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{data} .= chr ($nc); # comment
         $self->{read_until}->($self->{ct}->{data},
-                              q[-],
+                              qq[-\x00],
                               length $self->{ct}->{data});
 
         ## Stay in the state
@@ -2549,6 +2733,22 @@ sub _get_next_token ($) {
 
         return  ($self->{ct}); # comment
 
+        redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        $self->{ct}->{data} .= "-\x{FFFD}"; # comment
+        $self->{state} = COMMENT_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
         redo A;
       } else {
         
@@ -2651,6 +2851,26 @@ sub _get_next_token ($) {
 
         return  ($self->{ct}); # comment
 
+        redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        if ($state == COMMENT_END_BANG_STATE) {
+          $self->{ct}->{data} .= "--!\x{FFFD}"; # comment
+        } else {
+          $self->{ct}->{data} .= "--\x{FFFD}"; # comment
+        }
+        $self->{state} = COMMENT_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
         redo A;
       } else {
         
@@ -2791,6 +3011,22 @@ sub _get_next_token ($) {
   
         return  ($self->{ct}); # DOCTYPE
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{name} = "\x{FFFD}";
+        delete $self->{ct}->{quirks};
+        $self->{state} = DOCTYPE_NAME_STATE;
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{name} = chr $nc;
@@ -2811,8 +3047,6 @@ sub _get_next_token ($) {
       }
     } elsif ($state == DOCTYPE_NAME_STATE) {
       ## XML5: "DOCTYPE root name state".
-
-      ## ISSUE: Redundant "First," in the spec.
 
       if ($is_space->{$nc}) {
         
@@ -2892,6 +3126,21 @@ sub _get_next_token ($) {
     }
   
         return  ($self->{ct}); # DOCTYPE
+        redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{name} .= "\x{FFFD}"; # DOCTYPE
+        ## Stay in the state.
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
         redo A;
       } else {
         
@@ -3432,13 +3681,28 @@ sub _get_next_token ($) {
         ## Reconsume.
         return  ($self->{ct}); # DOCTYPE
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{pubid} .= "\x{FFFD}"; # DOCTYPE/ENTITY/NOTATION
+        ## Stay in the state.
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{pubid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
-        $self->{read_until}->($self->{ct}->{pubid}, q[">],
+        $self->{read_until}->($self->{ct}->{pubid}, qq[\x00">],
                               length $self->{ct}->{pubid});
 
-        ## Stay in the state
+        ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -3508,10 +3772,25 @@ sub _get_next_token ($) {
         ## reconsume
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{pubid} .= "\x{FFFD}"; # DOCTYPE/ENTITY/NOTATION
+        ## Stay in the state.
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{pubid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
-        $self->{read_until}->($self->{ct}->{pubid}, q['>],
+        $self->{read_until}->($self->{ct}->{pubid}, qq[\x00'>],
                               length $self->{ct}->{pubid});
 
         ## Stay in the state
@@ -3884,10 +4163,25 @@ sub _get_next_token ($) {
         ## reconsume
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{sysid} .= "\x{FFFD}"; # DOCTYPE/ENTITY/NOTATION
+        ## Stay in the state.
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{sysid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
-        $self->{read_until}->($self->{ct}->{sysid}, q[">],
+        $self->{read_until}->($self->{ct}->{sysid}, qq[\x00">],
                               length $self->{ct}->{sysid});
 
         ## Stay in the state
@@ -3956,10 +4250,25 @@ sub _get_next_token ($) {
         ## reconsume
         return  ($self->{ct}); # DOCTYPE/ENTITY/NOTATION
         redo A;
+      } elsif ($nc == 0x0000) {
+        $self->{ct}->{sysid} .= "\x{FFFD}"; # DOCTYPE/ENTITY/NOTATION
+        ## Stay in the state.
+        
+    if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
+      $self->{line_prev} = $self->{line};
+      $self->{column_prev} = $self->{column};
+      $self->{column}++;
+      $self->{nc}
+          = ord substr ($self->{char_buffer}, $self->{char_buffer_pos}++, 1);
+    } else {
+      $self->{set_nc}->($self);
+    }
+  
+        redo A;
       } else {
         
         $self->{ct}->{sysid} .= chr $nc; # DOCTYPE/ENTITY/NOTATION
-        $self->{read_until}->($self->{ct}->{sysid}, q['>],
+        $self->{read_until}->($self->{ct}->{sysid}, qq[\x00'>],
                               length $self->{ct}->{sysid});
 
         ## Stay in the state
@@ -4279,8 +4588,11 @@ sub _get_next_token ($) {
         
         $self->{ct}->{data} .= chr $nc;
         $self->{read_until}->($self->{ct}->{data},
-                              q<]>,
+                              qq<\x00]>,
                               length $self->{ct}->{data});
+        ## NOTE: NULLs are left as is (see spec's comment).  However,
+        ## a token cannot contain more than one U+0000 NULL character
+        ## for the ease of processing in the tree constructor.
 
         ## Stay in the state.
         
@@ -5010,7 +5322,7 @@ sub _get_next_token ($) {
         redo A;
       }
 
-    ## XML-only states
+    ## ========== XML-only states ==========
 
     } elsif ($state == PI_STATE) {
       ## XML5: "Pi state" and "DOCTYPE pi state".
@@ -5037,8 +5349,11 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: "DOCTYPE pi state": Stay in the state.
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
         $self->{ct} = {type => PI_TOKEN,
-                       target => chr $nc,
+                       target => $nc == 0x0000 ? "\x{FFFD}" : chr $nc,
                        data => '',
                        line => $self->{line_prev},
                        column => $self->{column_prev} - 1,
@@ -5103,7 +5418,10 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: typo ("tag name" -> "target")
-        $self->{ct}->{target} .= chr $nc; # pi
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{target} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # pi
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -5169,8 +5487,11 @@ sub _get_next_token ($) {
                   column => $self->{ct}->{column}});
         redo A;
       } else {
-        $self->{ct}->{data} .= chr $nc; # pi
-        $self->{read_until}->($self->{ct}->{data}, q[?],
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{data} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # pi
+        $self->{read_until}->($self->{ct}->{data}, qq[\x00?],
                               length $self->{ct}->{data});
         ## Stay in the state.
         
@@ -5299,7 +5620,7 @@ sub _get_next_token ($) {
       } elsif ($nc == 0x0025) { # %
         ## XML5: Not defined yet.
 
-        ## TODO:
+        ## TODO: parameter entity expansion
 
         if (not $self->{stop_processing} and
             not $self->{document}->xml_standalone) {
@@ -6025,7 +6346,10 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: [ATTLIST] Not defined yet.
-        $self->{ct}->{name} .= chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{name} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         $self->{state} = MD_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6137,7 +6461,10 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: [ATTLIST] Not defined yet.
-        $self->{ct}->{name} .= chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{name} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6190,7 +6517,10 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: Not defined yet.
-        $self->{ca} = {name => chr ($nc), # attrdef
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ca} = {name => $nc == 0x0000 ? "\x{FFFD}" : chr $nc, # attrdef
                        tokens => [],
                        line => $self->{line}, column => $self->{column}};
         $self->{state} = DOCTYPE_ATTLIST_ATTRIBUTE_NAME_STATE;
@@ -6274,7 +6604,10 @@ sub _get_next_token ($) {
         redo A;
       } else {
         ## XML5: Not defined yet.
-        $self->{ca}->{name} .= chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ca}->{name} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6699,7 +7032,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        push @{$self->{ca}->{tokens}}, chr $nc;
+        if ($nc == 0x000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        push @{$self->{ca}->{tokens}}, $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         $self->{state} = ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6791,7 +7127,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        $self->{ca}->{tokens}->[-1] .= chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ca}->{tokens}->[-1] .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -6886,7 +7225,10 @@ sub _get_next_token ($) {
         $self->{parse_error}->(level => $self->{level}->{must}, type => 'space in allowed token', ## TODO: type
                         line => $self->{line_prev},
                         column => $self->{column_prev});
-        $self->{ca}->{tokens}->[-1] .= ' ' . chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ca}->{tokens}->[-1] .= ' ' . ($nc == 0x0000 ? "\x{FFFD}" : chr $nc);
         $self->{state} = ALLOWED_TOKEN_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7562,7 +7904,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        $self->{ct}->{notation} = chr $nc; # ENTITY
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{notation} = $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # ENTITY
         $self->{state} = NOTATION_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7624,7 +7969,10 @@ sub _get_next_token ($) {
         ## The current token.
         redo A;
       } else {
-        $self->{ct}->{notation} .= chr $nc; # ENTITY
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{notation} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # ENTITY
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7678,7 +8026,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        $self->{ct}->{value} .= chr $nc; # ENTITY
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{value} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # ENTITY
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -7731,7 +8082,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        $self->{ct}->{value} .= chr $nc; # ENTITY
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{value} .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # ENTITY
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
       $self->{line_prev} = $self->{line};
@@ -7846,7 +8200,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        $self->{ct}->{content} = [chr $nc];
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{content} = [$nc == 0x0000 ? "\x{FFFD}" : chr $nc];
         $self->{state} = CONTENT_KEYWORD_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -7908,7 +8265,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        $self->{ct}->{content}->[-1] .= chr $nc; # ELEMENT
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{content}->[-1] .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc; # ELEMENT
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8022,7 +8382,10 @@ sub _get_next_token ($) {
         ## Discard the current token.
         redo A;
       } else {
-        push @{$self->{ct}->{content}}, chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        push @{$self->{ct}->{content}}, $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         $self->{state} = CM_ELEMENT_NAME_STATE;
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {
@@ -8136,7 +8499,10 @@ sub _get_next_token ($) {
         ## Discard the token.
         redo A;
       } else {
-        $self->{ct}->{content}->[-1] .= chr $nc;
+        if ($nc == 0x0000) {
+          $self->{parse_error}->(level => $self->{level}->{must}, type => 'NULL');
+        }
+        $self->{ct}->{content}->[-1] .= $nc == 0x0000 ? "\x{FFFD}" : chr $nc;
         ## Stay in the state.
         
     if ($self->{char_buffer_pos} < length $self->{char_buffer}) {

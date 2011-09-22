@@ -215,6 +215,7 @@ sub parse_string
 	my $text = shift;
 	my $opts = shift || {};
 	
+	$self->{'errors'} = [];
 	$opts->{'parser_used'} = 'HTML::HTML5::Parser';
 	my $dom = XML::LibXML::Document->createDocument;
 	
@@ -222,6 +223,7 @@ sub parse_string
 	{
 		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($opts->{'encoding'}, $text, $dom, sub{
 			my $err = \@_;
+			$self->{onerror}->(@_) if $self->{onerror};
 			push @{$self->{'errors'}}, $err;
 			});
 	}
@@ -229,6 +231,7 @@ sub parse_string
 	{
 		HTML::HTML5::Parser::TagSoupParser->parse_char_string($text, $dom, sub{
 			my $err = \@_;
+			$self->{onerror}->(@_) if $self->{onerror};
 			push @{$self->{'errors'}}, $err;
 			});
 	}
@@ -290,6 +293,7 @@ sub AUTOLOAD
 		return 0;
 	}
 
+	carp "HTML::HTML5::Parser doesn't understand '$func'." if length $func;
 }
 
 =head2 Additional Methods
@@ -383,6 +387,7 @@ sub source_line
 	}
 }
 
+sub DESTROY {}
 
 =back
 

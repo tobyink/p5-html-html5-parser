@@ -130,6 +130,20 @@ my:v_0-103
 			[ rdfs:label "TagSoupParser.pm called a method that is renamed between this distribution and upstream using its upstream name."@en ; a dcs:Bugfix ]
 		] .
 
+my:v_0-104
+
+	a               :Version ;
+	dc:issued       "2011-09-22"^^xsd:date ;
+	:revision       "0.104"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.104.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-103 ;
+		dcs:item
+			[ rdfs:label "Catch up to revision d81fcb920a1a3c351149cd66a64bf1b8ae14a172 (2011-08-21) upstream."@en ; a dcs:Update ] ,
+			[ rdfs:label "Support <track> element."@en ; a dcs:Addition ]
+		] .
+
+
 #############################################################
 
 my:project
