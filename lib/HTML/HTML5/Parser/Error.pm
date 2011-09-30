@@ -1,0 +1,134 @@
+package HTML::HTML5::Parser::Error;
+
+=head1 NAME
+
+HTML::HTML5::Parser::Error - an error that occured during parsing
+
+=cut
+
+use 5.008001;
+use strict;
+use warnings;
+
+our $VERSION = '0.104';
+
+sub new
+{
+	my ($class, %args) = @_;
+	bless \%args, $class;
+}
+
+=head1 DESCRIPTION
+
+Note that L<HTML::HTML5::Parser> is not a validation tool, and there are many
+classes of error that it does not care about, so will not raise.
+
+The C<error_handler> and C<errors> methods of C<HTML::HTML5::Parser> generate
+C<HTML::HTML5::Parser::Error> objects.
+
+=head2 Methods
+
+=over
+
+=item C<level>
+
+Returns the level of error. ('MUST', 'SHOULD', 'WARN', 'INFO' or undef.)
+
+=cut
+
+sub level
+{
+	my $self = shift;
+	return {
+		m     => 'MUST',
+		s     => 'SHOULD',
+		w     => 'WARN',
+		i     => 'INFO',
+		u     => undef,
+		}->{$self->{level}} || undef;
+}
+
+=item C<layer>
+
+Returns the parsing layer involved, often undef. e.g. 'encode'.
+
+=cut
+
+sub layer
+{
+	my $self = shift;
+	return $self->{layer} || undef;
+}
+
+=item C<type>
+
+Returns the type of error as a string.
+
+=cut
+
+sub type
+{
+	my $self = shift;
+	return $self->{type}||undef;
+}
+
+=item C<tag_name>
+
+Returns the tag name (if any).
+
+=cut
+
+sub tag_name
+{
+	my $self = shift;
+	return undef unless $self->{token} && exists $self->{token}{tag_name};
+	return $self->{token}{tag_name};
+}
+
+=item C<source_line>
+
+  ($line, $col) = $error->source_line();
+  $line = $error->source_line;
+  
+In scalar context, C<source_line> returns the line number of the
+source code that triggered the error.
+
+In list context, returns a line/column pair. (Tab characters count as
+one column, not eight.)
+
+=cut
+
+sub source_line
+{
+	my $self = shift;
+	
+	if (wantarray)
+	{
+		return ($self->{line}, $self->{column});
+	}
+	else
+	{
+		return $self->{line};
+	}
+}
+
+1;
+
+=back
+
+=head1 SEE ALSO
+
+L<HTML::HTML5::Parser>.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.1 or,
+at your option, any later version of Perl 5 you may have available.
+

@@ -1,130 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rdf:RDF xmlns:dbug="http://ontologi.es/doap-bugs#" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcs="http://ontologi.es/doap-changeset#" xmlns:doap="http://usefulinc.com/ns/doap#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r0">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r1"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r2"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r0">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r1"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r2"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-01"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r1">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r1">
 	<rdfs:label xml:lang="en">Replace Inline::Python encoding detection with weaker, but native Perl HTML::Encoding package.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r10">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r10">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
 	<rdfs:label xml:lang="en">Minor bugfixes.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r11">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r12"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r11">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r12"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r12">
-	<dcs:fixes rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r13"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r12">
+	<dcs:fixes rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r13"/>
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
 	<rdfs:label xml:lang="en">UTF-8 fix.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r13">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r13">
 	<dbug:reporter rdf:resource="http://purl.org/NET/cpan-uri/person/gwilliams"/>
 	<rdfs:label xml:lang="en">Wide characters in DOM tree.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r14">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r15"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r16"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r17"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r18"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r19"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r14">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r15"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r16"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r17"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r18"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r19"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r15">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r15">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
 	<rdfs:label xml:lang="en">Fix source_line method.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r16">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r16">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
 	<rdfs:label xml:lang="en">Catch up to revision f2c921a886ab0b3dfb8d21b82525e98a4a921ad4 (2010-10-11) upstream.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r17">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r17">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
 	<rdfs:label xml:lang="en">Allow &lt;object> element to appear in &lt;head> if document has an HTML4 doctype. This is a willful violation of the HTML5 parsing algorithm. (The &lt;object> may have &lt;param> elements as children, as well as any children that would normally be allowed in the &lt;head> of the document, such as &lt;meta>; any other content is treated as the beginning of the &lt;body>, and thus closes &lt;object> and &lt;head>. That's slightly looser than the HTML 4 spec which says only &lt;param> should be used, but stricter than the HTML 4 DTD which allows pretty much anything in there!)</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r18">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r18">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
 	<rdfs:label xml:lang="en">Support &lt;figcaption> element.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r19">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r19">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
 	<rdfs:label xml:lang="en">Support &lt;summary> element.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r2">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r2">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Packaging"/>
 	<rdfs:label xml:lang="en">Bundle the html2xhtml tool.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r20">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r21"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r22"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r20">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r21"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r22"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r21">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r21">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Documentation"/>
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
 	<rdfs:label xml:lang="en">Copyright 2011.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r22">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r22">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
 	<rdfs:label xml:lang="en">TagSoupParser.pm called a method that is renamed between this distribution and upstream using its upstream name.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r23">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r24"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r25"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r26"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r23">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r24"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r25"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r26"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-103"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r24">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r24">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
 	<rdfs:label xml:lang="en">Catch up to revision d81fcb920a1a3c351149cd66a64bf1b8ae14a172 (2011-08-21) upstream.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r25">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r25">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
 	<rdfs:label xml:lang="en">Support &lt;track> element.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r26">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r26">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Addition"/>
 	<rdfs:label xml:lang="en">Some error handling stuff.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r27">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r27">
 	<doap:browse rdf:resource="http://goddamn.co.uk/svn-web/perlmods/browse/HTML-HTML5-Parser/"/>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#SVNRepository"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r3">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r4"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r5"/>
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r6"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r3">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r4"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r5"/>
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r6"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r4">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r4">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Bugfix"/>
 	<rdfs:comment>Thanks shellac</rdfs:comment>
 	<rdfs:label xml:lang="en">Module didn't use URI::file properly.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r5">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r5">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Packaging"/>
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
 	<rdfs:label xml:lang="en">Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r6">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r6">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Documentation"/>
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
 	<rdfs:label xml:lang="en">Copyright 2010.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r7">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r8"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r7">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r8"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03"/>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r8">
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r8">
 	<rdf:type rdf:resource="http://ontologi.es/doap-changeset#Update"/>
 	<rdfs:label xml:lang="en">Catch up to revision cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc (2010-02-28) upstream.</rdfs:label>
 </rdf:Description>
-<rdf:Description rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r9">
-	<dcs:item rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r10"/>
+<rdf:Description rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r9">
+	<dcs:item rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r10"/>
 	<dcs:versus rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04"/>
 </rdf:Description>
 <rdf:Description rdf:about="file:///home/tai/src/perlmods/HTML-HTML5-Parser/Changes.ttl">
@@ -160,7 +160,7 @@
 	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-102"/>
 	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-103"/>
 	<doap:release rdf:resource="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-104"/>
-	<doap:repository rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r27"/>
+	<doap:repository rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r27"/>
 	<doap:shortdesc xml:lang="en">parse HTML reliably</doap:shortdesc>
 	<doap:tester rdf:resource="http://tobyinkster.co.uk/#i"/>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Project"/>
@@ -180,56 +180,56 @@
 	<rdfs:label xml:lang="en">Original version</rdfs:label>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-02">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r0"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r0"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2009-12-16</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.02.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.02</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-03">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r3"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r3"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-01-15</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.03.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.03</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-04">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r7"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r7"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-04-21</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.04.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.04</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-100">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r9"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r9"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-23</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.100.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.100</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-101">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r11"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r11"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2010-06-30</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.101.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.101</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-102">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r14"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r14"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-01-19</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.102.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.102</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-103">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r20"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r20"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-02-09</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.103.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.103</doap:revision>
 	<rdf:type rdf:resource="http://usefulinc.com/ns/doap#Version"/>
 </rdf:Description>
 <rdf:Description rdf:about="http://purl.org/NET/cpan-uri/dist/HTML-HTML5-Parser/v_0-104">
-	<dcs:changeset rdf:nodeID="r457A2478E53B11E094A1DC570BF91504r23"/>
+	<dcs:changeset rdf:nodeID="r17EAF722E55D11E0A9EB9E531C6F0445r23"/>
 	<dc:issued rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-09-22</dc:issued>
 	<doap:file-release rdf:resource="http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.104.tar.gz"/>
 	<doap:revision rdf:datatype="http://www.w3.org/2001/XMLSchema#string">0.104</doap:revision>
