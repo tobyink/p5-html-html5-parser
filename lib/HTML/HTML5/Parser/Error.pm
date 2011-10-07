@@ -10,7 +10,9 @@ use 5.008001;
 use strict;
 use warnings;
 
-our $VERSION = '0.104';
+our $VERSION = '0.105';
+
+use overload '""' => \&to_string;
 
 sub new
 {
@@ -25,6 +27,19 @@ classes of error that it does not care about, so will not raise.
 
 The C<error_handler> and C<errors> methods of C<HTML::HTML5::Parser> generate
 C<HTML::HTML5::Parser::Error> objects.
+
+C<HTML::HTML5::Parser::Error> overloads stringification, so can be printed,
+matched against regular expressions, etc.
+
+=head2 Constructor
+
+=over
+
+=item C<< new(level=>$level, type=>$type, token=>$token, ...) >>
+
+Constructs a new C<HTML::HTML5::Parser::Error> object.
+
+=back
 
 =head2 Methods
 
@@ -110,6 +125,37 @@ sub source_line
 	{
 		return $self->{line};
 	}
+}
+
+=item C<to_string>
+
+Returns a friendly error string.
+
+=cut
+
+sub to_string
+{
+	my $self = shift;
+	
+	my $msg     = $self->type;
+	my $level   = $self->level;
+	my $tag     = $self->tag_name;
+	my ($l, $c) = $self->source_line;
+
+	my @details;
+	push @details, sprintf('complicance: %s', $level) if defined $level;
+	push @details, sprintf('line: %d', $l) if defined $l;
+	push @details, sprintf('column: %d', $c) if defined $c;
+	push @details, sprintf('tag: %s', $tag) if defined $tag;
+
+	if (@details)
+	{
+		$msg .= " [";
+		$msg .= join '; ', @details;
+		$msg .= "]";
+	}
+	
+	return $msg;
 }
 
 1;

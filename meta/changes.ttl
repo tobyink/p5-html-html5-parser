@@ -1,5 +1,3 @@
-#############################################################
-
 @prefix :        <http://usefulinc.com/ns/doap#> .
 @prefix author:  <http://purl.org/NET/cpan-uri/person/> .
 @prefix dbug:    <http://ontologi.es/doap-bugs#> .
@@ -11,35 +9,24 @@
 @prefix toby:    <http://tobyinkster.co.uk/#> .
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 
-#############################################################
-
-<>
-
-	dc:title         "Changes for HTML::HTML5::Parser" ;
-	dc:description   "Revision history for Perl extension HTML::HTML5::Parser."@en ;
-	dc:subject       my:project ;
-	dc:creator       toby:i .
-
-#############################################################
-
+my:project :release my:v_0-00_01 .
 my:v_0-00_01
-
 	a               :Version ;
 	dc:issued       "2009-12-01"^^xsd:date ;
 	:revision       "0.00_01"^^xsd:string ;
 	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.00_01.tar.gz> ;
 	rdfs:label      "Developer preview"@en  .
 	
+my:project :release my:v_0-01 .
 my:v_0-01
-
 	a               :Version ;
 	dc:issued       "2009-12-03"^^xsd:date ;
 	:revision       "0.01"^^xsd:string ;
 	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.01.tar.gz> ;
 	rdfs:label      "Original version"@en .
 
+my:project :release my:v_0-02 .
 my:v_0-02
-
 	a               :Version ;
 	dc:issued       "2009-12-16"^^xsd:date ;
 	:revision       "0.02"^^xsd:string ;
@@ -51,8 +38,8 @@ my:v_0-02
 			[ rdfs:label "Bundle the html2xhtml tool."@en ; a dcs:Addition , dcs:Packaging ]
 		] .
 
+my:project :release my:v_0-03 .
 my:v_0-03
-
 	a               :Version ;
 	dc:issued       "2010-01-15"^^xsd:date ;
 	:revision       "0.03"^^xsd:string ;
@@ -65,8 +52,8 @@ my:v_0-03
 			[ rdfs:label "Copyright 2010."@en ; a dcs:Update , dcs:Documentation ]
 		] .
 
+my:project :release my:v_0-04 .
 my:v_0-04
-
 	a               :Version ;
 	dc:issued       "2010-04-21"^^xsd:date ;
 	:revision       "0.04"^^xsd:string ;
@@ -77,8 +64,8 @@ my:v_0-04
 			[ rdfs:label "Catch up to revision cf2c0df8a6dfb50fee923dfb21b14c83f282ccdc (2010-02-28) upstream."@en ; a dcs:Update ]
 		] .
 
+my:project :release my:v_0-100 .
 my:v_0-100
-
 	a               :Version ;
 	dc:issued       "2010-06-23"^^xsd:date ;
 	:revision       "0.100"^^xsd:string ;
@@ -89,8 +76,8 @@ my:v_0-100
 			[ rdfs:label "Minor bugfixes."@en ; a dcs:Bugfix ]
 		] .
 
+my:project :release my:v_0-101 .
 my:v_0-101
-
 	a               :Version ;
 	dc:issued       "2010-06-30"^^xsd:date ;
 	:revision       "0.101"^^xsd:string ;
@@ -101,8 +88,8 @@ my:v_0-101
 			[ rdfs:label "UTF-8 fix."@en ; a dcs:Bugfix ; dcs:fixes [ rdfs:label "Wide characters in DOM tree."@en ; dbug:reporter author:gwilliams ] ]
 		] .
 
+my:project :release my:v_0-102 .
 my:v_0-102
-
 	a               :Version ;
 	dc:issued       "2011-01-19"^^xsd:date ;
 	:revision       "0.102"^^xsd:string ;
@@ -117,8 +104,8 @@ my:v_0-102
 			[ rdfs:label "Support <summary> element."@en ; a dcs:Addition ]
 		] .
 
+my:project :release my:v_0-103 .
 my:v_0-103
-
 	a               :Version ;
 	dc:issued       "2011-02-09"^^xsd:date ;
 	:revision       "0.103"^^xsd:string ;
@@ -130,8 +117,8 @@ my:v_0-103
 			[ rdfs:label "TagSoupParser.pm called a method that is renamed between this distribution and upstream using its upstream name."@en ; a dcs:Bugfix ]
 		] .
 
+my:project :release my:v_0-104 .
 my:v_0-104
-
 	a               :Version ;
 	dc:issued       "2011-09-22"^^xsd:date ;
 	:revision       "0.104"^^xsd:string ;
@@ -144,43 +131,17 @@ my:v_0-104
 			[ rdfs:label "Some error handling stuff."@en ; a dcs:Addition ]
 		] .
 
-
-#############################################################
-
-my:project
-
-	a               :Project ;
-	:name           "HTML-HTML5-Parser" ;
-	:shortdesc      "parse HTML reliably"@en ;
-	:programming-language  "Perl" ;
-	:homepage       <https://metacpan.org/release/HTML-HTML5-Parser> ;
-	:download-page  <https://metacpan.org/release/HTML-HTML5-Parser> ;
-	:bug-database   <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser> ;
-	:repository     [ a :SVNRepository ; :browse <http://goddamn.co.uk/svn-web/perlmods/browse/HTML-HTML5-Parser/> ] ;
-	:maintainer     toby:i ;
-	:developer      toby:i , my:dev-wakaba ;
-	:documenter     toby:i ;
-	:tester         toby:i ;
-	:created        "2009-11-26"^^xsd:date ;
-	:license        <http://dev.perl.org/licenses/> ;
-	:release        my:v_0-00_01 , my:v_0-01 , my:v_0-02 , my:v_0-03 , my:v_0-04 ,
-	                my:v_0-100 , my:v_0-101 , my:v_0-102 , my:v_0-103 , my:v_0-104  .
-
-#############################################################
-
-toby:i
-
-	a               foaf:Person ;
-	foaf:name       "Toby Inkster" ;
-	foaf:homepage   <http://tobyinkster.co.uk/> ;
-	foaf:page       <https://metacpan.org/author/TOBYINK> ;
-	foaf:mbox       <mailto:tobyink@cpan.org> ;
-	<http://www.w3.org/2002/07/owl#sameAs> author:tobyink .
-
-my:dev-wakaba
-
-	a               foaf:Person ;
-	foaf:name       "Wakaba" ;
-	foaf:page       <http://suika.fam.cx/>.
-
-#############################################################
+my:project :release my:v_0-105 .
+my:v_0-105
+	a               :Version ;
+	dc:issued       "2011-10-07"^^xsd:date ;
+	:revision       "0.105"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.107.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-104 ;
+		dcs:item
+			[ rdfs:label "HTML::HTML5::Parser::Error overloads stringification."@en ] ,
+			[ rdfs:label "Module::Package::RDF."@en ; a dcs:Packaging ] ,
+			[ rdfs:label "Bundle 'html5debug' script."@en ; a dcs:Addition ] ,
+			[ rdfs:label "use HTML::HTML5::Entities"@en ]
+		] .

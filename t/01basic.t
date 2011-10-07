@@ -7,7 +7,7 @@ my $html = <<HTML;
 <!doctype html public "+//IDN demiblog.org//Foo Bar//EN">
 <title>foo</title>
 <p x="quux">Foo
-<ul xmlns:foo="http://example.com/"><li><b><i>Bar</b>t</i>
+<ul xmlns:foo="http://example.com/"><li><b><i>Bar</b>t&lt;</i>
 The inequality is 2<3 .<br>
 <!--Hello-World --!></ul>
 <body a="b"><p>Baz<p///></br>
@@ -23,4 +23,4 @@ is($parser->dtd_public_id($dom), "+//IDN demiblog.org//Foo Bar//EN", "dtd_public
 
 my @italics = $dom->getElementsByTagName('i');
 my $lone_letter = $italics[1];
-is($lone_letter->textContent, 't', "parsing seems to follow HTML5 rules");
+is($lone_letter->textContent, 't<', "parsing seems to follow HTML5 rules");

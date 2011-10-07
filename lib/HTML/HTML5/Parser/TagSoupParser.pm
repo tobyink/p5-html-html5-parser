@@ -10,8 +10,12 @@ use 5.008001;
 use strict;
 #use warnings;
 
-our $VERSION='0.104';
+our $VERSION = '0.105';
+
 use Error qw(:try);
+use IO::Handle;
+use HTML::HTML5::Parser::Tokenizer;
+use Scalar::Util qw(refaddr);
 
 BEGIN
 {
@@ -22,8 +26,6 @@ BEGIN
 		return $element->appendText($text);
 	};
 }
-
-use Scalar::Util qw(refaddr);
 
 our $DATA;
 sub DATA
@@ -44,8 +46,6 @@ sub DATA
 	return $DATA->{$oaddr};
 }
 
-use HTML::HTML5::Parser::Tokenizer;
-
 ## NOTE: This module don't check all HTML5 parse errors; character
 ## encoding related parse errors are expected to be handled by relevant
 ## modules.
@@ -61,8 +61,6 @@ use HTML::HTML5::Parser::Tokenizer;
 ## var doc = implementation.createDocument (null, null, null);
 ## doc.write ('');
 ## alert (doc.compatMode);
-
-require IO::Handle;
 
 ## Namespace URLs
 

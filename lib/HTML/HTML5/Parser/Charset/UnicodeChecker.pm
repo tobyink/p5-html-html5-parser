@@ -1,7 +1,7 @@
 package HTML::HTML5::Parser::Charset::UnicodeChecker;
 use strict;
 
-our $VERSION = '0.104';
+our $VERSION = '0.105';
 
 ## NOTE: For more information (including rationals of checks performed
 ## in this module), see

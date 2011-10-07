@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
 use strict;
-our $VERSION='0.104';
+our $VERSION='0.105';
 
 ## This module implements the tokenization phase of both HTML5 and
 ## XML5.  Notes like this are usually based on the latest HTML
@@ -82,6 +82,8 @@ sub NOTATION_TOKEN () { 14 } ## NOTE: XML only.
 package HTML::HTML5::Parser::TagSoupParser;
 
 BEGIN { HTML::HTML5::Parser::Tokenizer->import (':token') }
+
+use HTML::HTML5::Entities qw[%entity2char];
 
 ## ------ Tokenizer states ------
 
@@ -5120,9 +5122,9 @@ sub _get_next_token ($) {
                   ## This is redundant for the same reason.
                   $self->{entity_add} => 1,
                 }->{$nc}))) {
-        our $EntityChar;
+        #local %entity2char;
         $self->{kwd} .= chr $nc; ## Bare entity name.
-        if (defined $EntityChar->{$self->{kwd}} or ## HTML charrefs.
+        if (defined $entity2char{$self->{kwd}} or ## HTML charrefs.
             $self->{ge}->{$self->{kwd}}) { ## XML general entities.
           if ($nc == 0x003B) { # ;
             if (defined $self->{ge}->{$self->{kwd}}) {
@@ -5160,7 +5162,7 @@ sub _get_next_token ($) {
               } else {
                 
               }
-              $self->{entity__value} = $EntityChar->{$self->{kwd}};
+              $self->{entity__value} = $entity2char{$self->{kwd}};
             }
             $self->{entity__match} = 1; ## Matched exactly with ";" entity.
             
@@ -5177,7 +5179,7 @@ sub _get_next_token ($) {
             #
           } else {
             
-            $self->{entity__value} = $EntityChar->{$self->{kwd}};
+            $self->{entity__value} = $entity2char{$self->{kwd}};
             $self->{entity__match} = -1; ## Exactly matched to non-";" entity.
             ## Stay in the state.
             
