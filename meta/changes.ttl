@@ -136,7 +136,7 @@ my:v_0-105
 	a               :Version ;
 	dc:issued       "2011-10-07"^^xsd:date ;
 	:revision       "0.105"^^xsd:string ;
-	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.107.tar.gz> ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.105.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0-104 ;
 		dcs:item
@@ -144,4 +144,29 @@ my:v_0-105
 			[ rdfs:label "Module::Package::RDF."@en ; a dcs:Packaging ] ,
 			[ rdfs:label "Bundle 'html5debug' script."@en ; a dcs:Addition ] ,
 			[ rdfs:label "use HTML::HTML5::Entities"@en ]
+		] .
+
+my:project :release my:v_0-106 .
+my:v_0-106
+	a               :Version ;
+	dc:issued       "2011-10-10"^^xsd:date ;
+	:revision       "0.106"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.106.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-105 ;
+		dcs:item
+			[ rdfs:label "Tokenizer.pm was still trying to require NamedEntityList.pm."@en ; a dcs:Bugfix ]
+		] .
+
+my:project :release my:v_0-107 .
+my:v_0-107
+	a               :Version ;
+	dc:issued       "2011-10-20"^^xsd:date ;
+	:revision       "0.107"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.107.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-106 ;
+		dcs:item   [ rdfs:label "parse_file wasn't accepting relative file names"@en ; a dcs:Bugfix ] ;
+		dcs:item   [ rdfs:label "html2xhtml now reads from STDIN by default."@en ; a dcs:Addition ] ;
+		dcs:item   [ rdfs:label "html2xhtml can output to a file."@en ; a dcs:Addition ]
 		] .

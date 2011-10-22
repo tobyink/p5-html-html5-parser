@@ -26,12 +26,13 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.105';
+our $VERSION = '0.107';
 
 use Carp;
 use HTML::HTML5::Parser::Error;
 use HTML::HTML5::Parser::TagSoupParser;
 use LWP::UserAgent;
+use Scalar::Util qw(blessed);
 use URI::file;
 use XML::LibXML;
 
@@ -112,16 +113,12 @@ sub parse_file
 	my $file   = shift;
 	my $opts   = shift || {};
 	
-	unless (UNIVERSAL::isa($file, 'URI'))
+	unless (blessed($file) and $file->isa('URI'))
 	{
 		if ($file =~ /^[a-z0-9_\.-]+:\S+$/i)
-		{
-			$file = URI->new($file);
-		}
+			{ $file = URI->new($file); }
 		else
-		{
-			$file = URI::file->new($file);
-		}
+			{ $file = URI::file->new_abs($file); }
 	}
 	
 	my $ua;

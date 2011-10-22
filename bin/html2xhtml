@@ -1,11 +1,23 @@
 #!/usr/bin/perl
 
+use 5.010;
 use HTML::HTML5::Parser;
 
-my $uri = shift @ARGV
-	or die "Please specify an input URL or filename.\n";
+my $input  = shift // '-';
+my $output = shift // '-';
 
 my $parser = HTML::HTML5::Parser->new;
-my $dom    = $parser->parse_file($uri);
+my $dom = ($input eq '-')
+	? $parser->parse_string(do { local $/ = <STDIN> })
+	: $parser->parse_file($input);
 
-print $dom->toString;
+if ($output eq '-')
+{
+	print $dom->toString;
+}
+else
+{
+	open my($fh), '>:encoding(UTF-8)', $output;
+	print $fh $dom->toString;
+	close $fh;
+}

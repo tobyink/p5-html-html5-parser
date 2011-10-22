@@ -12,6 +12,7 @@
 	:requires "HTML::HTML5::Entities 0.001" ;
 	:requires "LWP::UserAgent" ;
 	:requires "XML::LibXML 1.60" ;
+	:requires "Scalar::Util" ;
 	:install_script _:html5debug , _:html2xhtml .
 
 _:main <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#fileName> "lib/HTML/HTML5/Parser.pm" .

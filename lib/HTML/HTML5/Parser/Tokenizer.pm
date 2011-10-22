@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
 use strict;
-our $VERSION='0.105';
+our $VERSION='0.107';
 
 ## This module implements the tokenization phase of both HTML5 and
 ## XML5.  Notes like this are usually based on the latest HTML
@@ -4738,7 +4738,7 @@ sub _get_next_token ($) {
                (0x0061 <= $nc and
                 $nc <= 0x007A)) { # a..z
         
-        require HTML::HTML5::Parser::NamedEntityList;
+        #require HTML::HTML5::Parser::NamedEntityList;
         $self->{state} = ENTITY_NAME_STATE;
         $self->{kwd} = chr $nc;
         $self->{entity__value} = $self->{kwd};
