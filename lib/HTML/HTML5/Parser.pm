@@ -26,7 +26,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.107';
+our $VERSION = '0.108';
 
 use Carp;
 use HTML::HTML5::Parser::Error;
@@ -77,7 +77,7 @@ sub new
 
 =head2 XML::LibXML-Compatible Methods
 
-=over 8
+=over
 
 =item C<parse_file>, C<parse_html_file>
 
@@ -238,6 +238,51 @@ sub parse_string
 }
 *parse_html_string = \&parse_string;
 
+=item C<load_xml>, C<load_html>
+
+Wrappers for the parse_* functions. These should be roughly compatible with
+the equivalently named functions in L<XML::LibXML>.
+
+Note that C<load_xml> first attempts to parse as real XML, falling back to
+HTML5 parsing; C<load_html> just goes straight for HTML5.
+
+=cut
+
+sub load_html
+{
+	my $class_or_self = shift;
+	
+	my %args = map { ref($_) eq 'HASH' ? (%$_) : $_ } @_;
+	my $URI = delete($args{URI});
+	$URI = "$URI" if defined $URI; # stringify in case it is an URI object
+	my $parser = ref($class_or_self)
+		? $class_or_self
+		: $class_or_self->new;
+		
+	my $dom;
+	if ( defined $args{location} )
+		{ $dom = $parser->parse_file( "$args{location}" ) }
+	elsif ( defined $args{string} )
+		{ $dom = $parser->parse_string( $args{string}, $URI ) }
+	elsif ( defined $args{IO} )
+		{ $dom = $parser->parse_fh( $args{IO}, $URI ) }
+	else
+		{ croak("XML::LibXML->load: specify location, string, or IO"); }
+	
+	return $dom;
+}
+
+sub load_xml
+{
+	my $self = shift;
+	my $dom;
+	eval {
+		$dom = XML::LibXML->load_xml(@_);
+	};
+	return $dom if blessed($dom);
+	return $self->load_html(@_);
+}
+
 =back
 
 The push parser and SAX-based parser are not supported. Trying
@@ -299,7 +344,7 @@ sub AUTOLOAD
 The module provides a few additional methods to obtain additional,
 non-DOM data from DOM nodes.
 
-=over 8
+=over
 
 =item C<error_handler>
 
@@ -436,7 +481,7 @@ Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
 
 Copyright (C) 2007-2011 by Wakaba
 
-Copyright (C) 2009-2011 by Toby Inkster
+Copyright (C) 2009-2012 by Toby Inkster
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.1 or,

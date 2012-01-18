@@ -47,7 +47,7 @@ my:v_0-03
 	dcs:changeset [
 		dcs:versus my:v_0-02 ;
 		dcs:item
-			[ rdfs:label "Module didn't use URI::file properly."@en ; a dcs:Bugfix ; rdfs:comment "Thanks shellac" ] ,
+			[ rdfs:label "Module didn't use URI::file properly."@en ; a dcs:Bugfix ; dcs:blame [ foaf:nick "shellac" ] ] ,
 			[ rdfs:label "Upgrade distribution to my new packaging regime (auto-generated changelogs, etc)"@en ; a dcs:Update , dcs:Packaging ] ,
 			[ rdfs:label "Copyright 2010."@en ; a dcs:Update , dcs:Documentation ]
 		] .
@@ -170,3 +170,18 @@ my:v_0-107
 		dcs:item   [ rdfs:label "html2xhtml now reads from STDIN by default."@en ; a dcs:Addition ] ;
 		dcs:item   [ rdfs:label "html2xhtml can output to a file."@en ; a dcs:Addition ]
 		] .
+
+my:project :release my:v_0-108 .
+my:v_0-108
+	a               :Version ;
+	dc:issued       "2012-01-18"^^xsd:date ;
+	:revision       "0.108"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.108.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-107 ;
+		dcs:item   [ rdfs:label "Crashed when generating an error message about some missing closing tags."@en ; a dcs:Bugfix ; dcs:blame <http://purl.org/NET/cpan-uri/person/audreyt> ] ;
+		dcs:item   [ rdfs:label "Copyright 2012."@en ; a dcs:Update , dcs:Documentation ] ;
+		dcs:item   [ rdfs:label "Provide load_xml and load_html methods for compatibility with XML::LibXML 1.70 and newer."@en ; a dcs:Update ]
+		] .
+<http://purl.org/NET/cpan-uri/person/audreyt> foaf:nick "audreyt" .
+
