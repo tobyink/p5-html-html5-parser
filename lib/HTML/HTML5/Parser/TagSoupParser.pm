@@ -2211,31 +2211,31 @@ sub _tree_construction_main ($) {
 			 }
 			 elsif ($nsuri eq (MML_NS) && $attr_name eq 'definitionurl')
 			 {
-				 $attr = $self->{document}->createAttributeNS((MML_NS), 'definitionURL');
+				 $attr = $self->{document}->createAttributeNS((MML_NS), 'math:definitionURL');
 			 }
 			 elsif ($nsuri eq (MML_NS) )
 			 {
-				 $attr = $self->{document}->createAttributeNS((MML_NS), $attr_name);
+				 $attr = $self->{document}->createAttributeNS((MML_NS), "math:$attr_name");
 			 }
 			 elsif ($nsuri eq (SVG_NS) )
 			 {
 				 $attr = $self->{document}->createAttributeNS(
-					(SVG_NS), ($svg_attr_name->{$attr_name} || $attr_name));
+					(SVG_NS), "svg:".($svg_attr_name->{$attr_name} || $attr_name));
 			 }
-			 unless ($attr)
+			 unless (defined $attr)
 			 {
 				 $attr = $self->{document}->createAttributeNS($nsuri, $attr_name);
 			 }
-			 unless ($attr)
+			 unless (defined $attr)
 			 {
 				 $attr = $self->{document}->createAttribute($attr_name);
 			 }
 			 if ($attr)
 			 {
-				 $attr->setValue ($attr_t->{value});
+				 $attr->setValue($attr_t->{value});
 				 DATA($attr, manakai_source_line => $attr_t->{line});
 				 DATA($attr, manakai_source_column => $attr_t->{column});
-				 $el->setAttributeNodeNS ($attr);
+				 $el->setAttributeNodeNS($attr);
 			 }
         }
       

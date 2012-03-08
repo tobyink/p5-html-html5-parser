@@ -1,0 +1,56 @@
+These tests are from html5lib.
+
+Currently, these ones PASS:
+
+#   t-todo/tree-construction/adoption01.dat [13/13]
+#   t-todo/tree-construction/adoption02.dat [2/2]
+#   t-todo/tree-construction/comments01.dat [13/13]
+#   t-todo/tree-construction/doctype01.dat [37/37]
+#   t-todo/tree-construction/inbody01.dat [4/4]
+#   t-todo/tree-construction/isindex.dat [3/3]
+#   t-todo/tree-construction/pending-spec-changes-plain-text-unsafe.dat [1/1]
+#   t-todo/tree-construction/pending-spec-changes.dat [3/3]
+#   t-todo/tree-construction/scriptdata01.dat [26/26]
+#   t-todo/tree-construction/tables01.dat [17/17]
+#   t-todo/tree-construction/tests12.dat [2/2]
+#   t-todo/tree-construction/tests15.dat [14/14]
+#   t-todo/tree-construction/tests17.dat [13/13]
+#   t-todo/tree-construction/tests18.dat [20/20]
+#   t-todo/tree-construction/tests19.dat [104/104]
+#   t-todo/tree-construction/tests2.dat [61/61]
+#   t-todo/tree-construction/tests25.dat [20/20]
+#   t-todo/tree-construction/tests3.dat [24/24]
+#   t-todo/tree-construction/tests4.dat [7/7]
+#   t-todo/tree-construction/tests7.dat [30/30]
+#   t-todo/tree-construction/tests8.dat [9/9]
+#   t-todo/tree-construction/tricky01.dat [9/9]
+
+These are close:
+
+#   t-todo/tree-construction/tests1.dat [110/114]
+#   t-todo/tree-construction/tests10.dat [50/54]
+#   t-todo/tree-construction/tests16.dat [185/191]
+#   t-todo/tree-construction/tests26.dat [14/15]
+#   t-todo/tree-construction/tests5.dat [15/16]
+#   t-todo/tree-construction/webkit01.dat [46/48]
+#   t-todo/tree-construction/webkit02.dat [7/8]
+
+These have a long way to go:
+
+#   t-todo/tree-construction/domjs-unsafe.dat [38/49]
+#   t-todo/tree-construction/entities01.dat [33/67]
+#   t-todo/tree-construction/entities02.dat [18/25]
+#   t-todo/tree-construction/html5test-com.dat [17/24]
+#   t-todo/tree-construction/plain-text-unsafe.dat [22/33]
+#   t-todo/tree-construction/tests11.dat [6/9]
+#   t-todo/tree-construction/tests14.dat [1/7]
+#   t-todo/tree-construction/tests20.dat [32/39]
+#   t-todo/tree-construction/tests21.dat [2/22]
+#   t-todo/tree-construction/tests22.dat [3/5]
+#   t-todo/tree-construction/tests23.dat [2/5]
+#   t-todo/tree-construction/tests24.dat [0/8]
+#   t-todo/tree-construction/tests6.dat [44/52]
+#   t-todo/tree-construction/tests9.dat [18/27]
+#   t-todo/tree-construction/tests_innerHTML_1.dat [42/85]
+
+Patches that improve test performance would be brilliant!
