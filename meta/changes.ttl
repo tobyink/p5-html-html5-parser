@@ -185,3 +185,18 @@ my:v_0-108
 		] .
 <http://purl.org/NET/cpan-uri/person/audreyt> foaf:nick "audreyt" .
 
+my:project :release my:v_0-109 .
+my:v_0-109
+	a               :Version ;
+	dc:issued       "2012-03-15"^^xsd:date ;
+	:revision       "0.109"^^xsd:string ;
+	rdfs:label      "Yes, they are come, but they are not past."@en ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.109.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-108 ;
+		dcs:item   [ rdfs:label "Use correct case for MathML's definitionURL attribute."@en ; a dcs:Bugfix ] ;
+		dcs:item   [ rdfs:label "Fix several fatal errors on infrequently used code paths in TagSoupParser.pm."@en ; a dcs:Bugfix ] ;
+		dcs:item   [ rdfs:label "Bundle test cases from html5lib."@en ; a dcs:Packaging ] ;
+		dcs:item   [ rdfs:label "Provide parse_balanced_chunk to parse HTML fragments."@en ; a dcs:Addition ] ;
+		dcs:item   [ rdfs:label "Provide dtd_element method to get more information about the DTD."@en ; a dcs:Addition ]
+		] .
