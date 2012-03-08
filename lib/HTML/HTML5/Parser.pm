@@ -384,6 +384,14 @@ sub dtd_system_id
 	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'DTD_SYSTEM_ID'};
 }
 
+sub dtd_element
+{
+	my $self = shift;
+	my $node = shift;
+	
+	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'DTD_ELEMENT'};
+}
+
 sub source_line
 {
 	my $self = shift;
@@ -679,6 +687,14 @@ Public Identifier of the DTD used (if any).
 For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 System Identifier of the DTD used (if any).
+
+=item C<dtd_element>
+
+  $element = $parser->dtd_element( $doc );
+  
+For an XML::LibXML::Document which has been returned by
+HTML::HTML5::Parser, using this method will tell you the
+root element declared in the DTD used (if any).
 
 =item C<source_line>
 

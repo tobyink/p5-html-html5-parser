@@ -8,10 +8,7 @@ can_ok $parser, qw/
 	parse_string parse_html_string
 	parse_balanced_chunk
 	load_xml load_html
-	error_handler
-	errors
-	compat_mode
-	dtd_public_id
-	dtd_system_id
+	error_handler errors
+	compat_mode dtd_public_id dtd_system_id dtd_element
 	source_line
 	/;

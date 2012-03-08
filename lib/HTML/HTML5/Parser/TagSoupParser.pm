@@ -1045,6 +1045,9 @@ sub _tree_construction_initial ($) {
  
 		DATA($self->{'document'}, 'DTD_PUBLIC_ID', $token->{pubid});
 		DATA($self->{'document'}, 'DTD_SYSTEM_ID', $token->{sysid});
+		DATA($self->{'document'}, 'DTD_ELEMENT',   $token->{name});
+		DATA($self->{'document'}, 'DTD_COLUMN',    $token->{column});
+		DATA($self->{'document'}, 'DTD_LINE',      $token->{line});
 
     # TOBYINK
 		DATA($self->{'document'}, isHTML4 => 1)
