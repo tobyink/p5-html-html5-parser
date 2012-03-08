@@ -238,7 +238,11 @@ BEGIN {
 
 		chomp $current_test->{$current_key};
 		
-		$self->tests([ map { Local::HTML5Lib::Test->new(%$_) } @tests]);
+		$self->tests([ map {
+			utf8::decode($_->{document});
+			utf8::decode($_->{data});
+			Local::HTML5Lib::Test->new(%$_);
+			} @tests]);
 		return $self;
 	}
 
