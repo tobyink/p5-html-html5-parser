@@ -177,7 +177,7 @@ my %within = (
 		qw/thead tfoot tbody tr caption colgroup/),
 	(map { $_  => [qw/html body table tbody tr/, $_] }
 		qw/td th/),	
-	textarea   => [qw/html body form div/],
+	textarea   => [qw/html body form div textarea/],
 );
 
 sub parse_balanced_chunk
@@ -190,8 +190,9 @@ sub parse_balanced_chunk
 	croak "Cannot parse chunk as if within $w."
 		if !defined $ancestors;
 	
-	my @a = @$ancestors;
-	my $parent = pop @a;
+	my $parent = $ancestors->[-1];
+	my $n      = scalar(@$ancestors) - 2;
+	my @a      = $n ? @$ancestors[0 .. $n] : ();
 	
 	my $uniq = sprintf('rand_id_%09d', int rand 1_000_000_000);
 	my $document = 
