@@ -181,11 +181,12 @@ BEGIN {
 		open my $fh, '<', $filename;
 		push @tests, (my $current_test = {});
 		my $current_key;
-		while (<$fh>)
+		my @lines = <$fh>; # sometimes we need to peek at the next line!
+		while (defined ($_ = shift @lines))
 		{
 			no warnings;
 			
-			unless (/\S/)
+			if (!/\S/ and (!defined $lines[0] or $lines[0]=~ /^\#/))
 			{
 				chomp $current_test->{$current_key} if defined $current_key;
 				$current_test = {};
