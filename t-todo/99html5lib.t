@@ -270,6 +270,12 @@ our $SKIP = {
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
 	't-todo/tree-construction/webkit02.dat:4'
 		=> 'I basically just disagree with this test.',
+	't-todo/tree-construction/html5test-com.dat:1'
+		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad element name)',
+	't-todo/tree-construction/html5test-com.dat:2'
+		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
+	't-todo/tree-construction/html5test-com.dat:4'
+		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
 	};
 
 my $count;
