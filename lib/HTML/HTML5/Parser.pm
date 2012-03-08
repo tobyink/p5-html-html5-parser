@@ -696,6 +696,10 @@ For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 root element declared in the DTD used (if any).
 
+This may return the empty string if a DTD was present but
+did not contain a root element; or undef if no DTD was
+present.
+
 =item C<source_line>
 
   ($line, $col) = $parser->source_line( $node );
