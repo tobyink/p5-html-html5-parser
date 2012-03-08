@@ -114,7 +114,7 @@ BEGIN {
 	{
 		my ($self, $indent) = @_;
 		return sprintf("%s%s %s=\"%s\"\n", $indent, split(/:/, $self->nodeName), $self->value)
-			if $self->namespaceURI;
+			if $self->namespaceURI && $self->nodeName=~/:/;
 		return sprintf("%s%s=\"%s\"\n", $indent, $self->localname, $self->value);
 	}
 }

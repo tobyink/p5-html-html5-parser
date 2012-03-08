@@ -17,6 +17,7 @@ Currently, these ones PASS:
 #   t-todo/tree-construction/tests15.dat [14/14]
 #   t-todo/tree-construction/tests17.dat [13/13]
 #   t-todo/tree-construction/tests18.dat [20/20]
+#   t-todo/tree-construction/tests19.dat [104/104]
 #   t-todo/tree-construction/tests2.dat [61/61]
 #   t-todo/tree-construction/tests25.dat [20/20]
 #   t-todo/tree-construction/tests26.dat [14/15]
@@ -30,7 +31,6 @@ These are close:
 
 #   t-todo/tree-construction/tests1.dat [110/114]
 #   t-todo/tree-construction/tests16.dat [185/191]
-#   t-todo/tree-construction/tests19.dat [103/104]
 #   t-todo/tree-construction/tests5.dat [15/16]
 #   t-todo/tree-construction/webkit01.dat [46/48]
 #   t-todo/tree-construction/webkit02.dat [7/8]
