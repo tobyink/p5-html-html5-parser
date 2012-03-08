@@ -138,9 +138,11 @@ sub parse_string
 }
 *parse_html_string = \&parse_string;
 
-# TODO: frame, frameset, noembed, noframes, noscript
+# TODO: noembed, noframes, noscript
 my %within = (
 	html       => [qw/html/],
+	frameset   => [qw/html frameset/],
+	frame      => [qw/html frameset frame/],
 	head       => [qw/html head/],
 	title      => [qw/html head title/],
 	style      => [qw/html head style/],
@@ -149,7 +151,6 @@ my %within = (
 	body       => [qw/html body/],
 	script     => [qw/html body script/],
 	div        => [qw/html body div/],
-	
 	(map { $_  => [qw/html body div/, $_] }
 		qw/a abbr acronym address applet area article aside big blockquote
 		button center code details dir dl em fieldset figure font
@@ -604,8 +605,7 @@ where "foobar" is not a real HTML element name (as found in the HTML5
 spec), then this method will croak; if you pass the name of a void
 element (e.g. C<< "br" >> or C<< "meta" >>) then this method will
 croak; there are a handful of other unsupported elements which will
-croak (namely: C<< "noscript" >>, C<< "noembed" >>, C<< "noframes" >>,
-C<< "frameset" >> and C<< "frame" >>).
+croak (namely: C<< "noscript" >>, C<< "noembed" >>, C<< "noframes" >>).
 
 Note that the second time around, although we parsed the string "as
 if it were within a C<< <td> >> element", the C<< <i>Hello</i> >>
