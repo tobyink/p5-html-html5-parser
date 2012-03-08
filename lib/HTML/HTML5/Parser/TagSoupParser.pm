@@ -2443,7 +2443,7 @@ sub _tree_construction_main ($) {
       for my $attr_name (keys %{$token->{attributes}}) {
         unless ($top_el->hasAttributeNS(undef, $attr_name)) {
           
-          $top_el->set_attribute_ns
+          $top_el->setAttributeNS
             (undef, [undef, $attr_name], 
              $token->{attributes}->{$attr_name}->{value});
         }
@@ -5586,12 +5586,13 @@ sub _tree_construction_main ($) {
       $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         for my $attr_name (keys %{  $token->{attributes}}) {
+	  $attr_name =~ s/[^A-Za-z0-9:_-]//g;
           my $attr_t =   $token->{attributes}->{$attr_name};
-          my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
+          my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
           DATA($attr, manakai_source_line => $attr_t->{line});
           DATA($attr, manakai_source_column => $attr_t->{column});
-          $el->setAttributeNodeNS ($attr);
+          $el->setAttributeNodeNS($attr);
         }
       
         DATA($el, manakai_source_line => $token->{line})
@@ -6523,7 +6524,7 @@ sub _tree_construction_main ($) {
         
     {
       my $el;
-      
+	$token->{tag_name} =~ s/[^A-Za-z0-9:_-]//g;
       $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});
     
         ATR: for my $attr_name (keys %{  $token->{attributes}}) {
