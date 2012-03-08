@@ -2445,9 +2445,8 @@ sub _tree_construction_main ($) {
       my $top_el = $self->{open_elements}->[0]->[0];
       for my $attr_name (keys %{$token->{attributes}}) {
         unless ($top_el->hasAttributeNS(undef, $attr_name)) {
-          
           $top_el->setAttributeNS
-            (undef, [undef, $attr_name], 
+            (undef, $attr_name, 
              $token->{attributes}->{$attr_name}->{value});
         }
       }
