@@ -113,6 +113,8 @@ BEGIN {
 	sub pythonDebug
 	{
 		my ($self, $indent) = @_;
+		return sprintf("%s%s %s=\"%s\"\n", $indent, split(/:/, $self->nodeName), $self->value)
+			if $self->namespaceURI;
 		return sprintf("%s%s=\"%s\"\n", $indent, $self->localname, $self->value);
 	}
 }
