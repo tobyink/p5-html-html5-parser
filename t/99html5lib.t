@@ -134,7 +134,10 @@ BEGIN {
 	sub test_id
 	{
 		my $self = shift;
-		sprintf('%s:%s', $self->test_file->filename, $self->test_number);
+		if ($self->test_file->filename =~ m{ / ([^/]+) $ }x)
+		{
+			sprintf('%s:%s', $1, $self->test_number||1);
+		}
 	}
 	
 	sub dom
@@ -160,11 +163,21 @@ BEGIN {
 		}
 	}
 	
+	sub __uniscape
+	{
+		my $str = shift;
+		eval {
+			$str =~ s{ ([^\n\x20-\x7E]) }{ sprintf('\x{%04X}', ord($1)) }gex;
+		};
+		$str;
+	}
+	
 	sub run
 	{
 		my ($self) = @_;
 		my $expected = $self->document."\n";
 		my $got      = $self->dom->pythonDebug;
+		utf8::decode($got);
 		
 		local $Test::Builder::Level = $Test::Builder::Level + 1;
 		
@@ -181,8 +194,8 @@ BEGIN {
 			{
 				Test::More::fail("DATA: ".$self->data);
 				Test::More::diag("ID: ".$self->test_id);
-				Test::More::diag("GOT:\n$got");
-				Test::More::diag("EXPECTED:\n$expected");
+				Test::More::diag("GOT:\n" . __uniscape $got);
+				Test::More::diag("EXPECTED:\n" . __uniscape $expected);
 				return 0;
 			}
 		}
@@ -232,7 +245,7 @@ BEGIN {
 				($current_key = $1) =~ s/-/_/g;
 				next;
 			}
-			
+		
 			$current_test->{$current_key} .= $_;
 		}
 
@@ -262,30 +275,31 @@ BEGIN {
 package main;
 
 our $SKIP = {
-	't-todo/tree-construction/tests26.dat:10'
+	'tests26.dat:10'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
-	't-todo/tree-construction/webkit01.dat:14'
+	'webkit01.dat:14'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad element name)',
-	't-todo/tree-construction/webkit01.dat:42'
+	'webkit01.dat:42'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
-	't-todo/tree-construction/webkit02.dat:4'
+	'webkit02.dat:4'
 		=> 'I basically just disagree with this test.',
-	't-todo/tree-construction/html5test-com.dat:1'
+	'html5test-com.dat:1'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad element name)',
-	't-todo/tree-construction/html5test-com.dat:2'
+	'html5test-com.dat:2'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
-	't-todo/tree-construction/html5test-com.dat:4'
+	'html5test-com.dat:4'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
 	};
 
-my $count;
 my @fails;
 my @passes;
 
 unless (@ARGV)
 {
-	@ARGV = <t-todo/tree-construction/*.dat>;
+	@ARGV = <t/html5lib-pass/*.dat>;
 }
+
+plan tests => scalar(@ARGV);
 
 while (my $f = shift)
 {
@@ -298,8 +312,6 @@ while (my $f = shift)
 	{
 		push @fails, $F;
 	}
-	
-	++$count;
 }
 
 if (@fails)
@@ -316,4 +328,3 @@ if (@passes)
 		for @passes;
 }
 
-done_testing($count);
