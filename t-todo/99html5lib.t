@@ -61,6 +61,7 @@ BEGIN {
 		
 		my $nsbit  = '';
 		$nsbit = 'svg ' if $self->namespaceURI =~ /svg/i;
+		$nsbit = 'math ' if $self->namespaceURI =~ /math/i;
 		my $return = sprintf("%s<%s%s>\n", $indent, $nsbit, $self->localname);
 		
 		my @attribs = 
@@ -72,9 +73,17 @@ BEGIN {
 			$return .= $_->pythonDebug($indent . q{  });
 		}
 		
-		foreach ($self->childNodes)
+		if ($self->localname eq 'noscript')
 		{
-			$return .= $_->pythonDebug($indent . q{  });
+			my $innerHTML = join q{}, map { $_->toString } $self->childNodes;
+			$return .= $indent . q{  "} . $innerHTML . "\"\n";
+		}
+		else
+		{
+			foreach ($self->childNodes)
+			{
+				$return .= $_->pythonDebug($indent . q{  });
+			}
 		}
 		
 		return $return;
