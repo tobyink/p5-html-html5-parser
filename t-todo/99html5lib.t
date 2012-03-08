@@ -122,10 +122,18 @@ BEGIN {
 	
 	use Mo;
 	
+	has test_file         => (isa => 'Local::HTML5Lib::TestFile');
+	has test_number       => (isa => 'Num');
 	has data              => (isa => 'Str');
 	has errors            => (isa => 'Str');
 	has document          => (isa => 'Str');	
-	has document_fragment => (isa => 'Str');	
+	has document_fragment => (isa => 'Str');
+	
+	sub test_id
+	{
+		my $self = shift;
+		sprintf('%s:%s', $self->test_file->filename, $self->test_number);
+	}
 	
 	sub dom
 	{
@@ -158,17 +166,23 @@ BEGIN {
 		
 		local $Test::Builder::Level = $Test::Builder::Level + 1;
 		
-		if ($got eq $expected)
-		{
-			Test::More::pass("DATA: ".$self->data);
-			return 1;
-		}
-		else
-		{
-			Test::More::fail("DATA: ".$self->data);
-			Test::More::diag("GOT:\n$got");
-			Test::More::diag("EXPECTED:\n$expected");
-			return 0;
+		SKIP: {
+			my $excuse = $::SKIP->{ $self->test_id };
+			Test::More::skip($excuse, 1) if defined $excuse;
+			
+			if ($got eq $expected)
+			{
+				Test::More::pass("DATA: ".$self->data);
+				return 1;
+			}
+			else
+			{
+				Test::More::fail("DATA: ".$self->data);
+				Test::More::diag("ID: ".$self->test_id);
+				Test::More::diag("GOT:\n$got");
+				Test::More::diag("EXPECTED:\n$expected");
+				return 0;
+			}
 		}
 	}
 }
@@ -185,20 +199,26 @@ BEGIN {
 	sub read_file
 	{
 		my ($class, $filename) = @_;
+		
+		my $self = $class->new(
+			filename  => $filename,
+			);
+			
 		my @tests;
 		
 		open my $fh, '<', $filename;
-		push @tests, (my $current_test = {});
+		push @tests, (my $current_test = { test_file=>$self });
 		my $current_key;
-		my @lines = <$fh>; # sometimes we need to peek at the next line!
+		my @lines = <$fh>; # sometimes we need to peek at the next line;
 		while (defined ($_ = shift @lines))
 		{
 			no warnings;
 			
 			if (!/\S/ and (!defined $lines[0] or $lines[0]=~ /^\#data/))
 			{
+				$current_test->{test_number} = @tests;
 				chomp $current_test->{$current_key} if defined $current_key;
-				$current_test = {};
+				$current_test = { test_file=>$self };
 				$current_key  = undef;
 				push @tests, $current_test;
 				next;
@@ -215,11 +235,9 @@ BEGIN {
 		}
 
 		chomp $current_test->{$current_key};
-
-		return $class->new(
-			filename  => $filename,
-			tests     => [ map { Local::HTML5Lib::Test->new(%$_) } @tests],
-			);
+		
+		$self->tests([ map { Local::HTML5Lib::Test->new(%$_) } @tests]);
+		return $self;
 	}
 
 	sub run
@@ -230,10 +248,17 @@ BEGIN {
 		$self->{last_score} = 0;
 		Test::More::subtest(
 			sprintf("Test file: %s", $self->filename),
-			sub { $self->{last_score} += ($_->run ? 1 : 0) for @{ $self->tests } },
+			sub {	$self->{last_score} += ($_->run ? 1 : 0) for @{ $self->tests } },
 			);
 	}
 }
+
+package main;
+
+our $SKIP = {
+	't-todo/tree-construction/tests26.dat:10'
+		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
+	};
 
 my $count;
 my @fails;
