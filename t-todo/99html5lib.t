@@ -195,7 +195,7 @@ BEGIN {
 		{
 			no warnings;
 			
-			if (!/\S/ and (!defined $lines[0] or $lines[0]=~ /^\#/))
+			if (!/\S/ and (!defined $lines[0] or $lines[0]=~ /^\#data/))
 			{
 				chomp $current_test->{$current_key} if defined $current_key;
 				$current_test = {};
@@ -214,7 +214,7 @@ BEGIN {
 			$current_test->{$current_key} .= $_;
 		}
 
-				chomp $current_test->{$current_key};
+		chomp $current_test->{$current_key};
 
 		return $class->new(
 			filename  => $filename,
