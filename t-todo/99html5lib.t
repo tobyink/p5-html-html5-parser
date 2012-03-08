@@ -260,6 +260,12 @@ package main;
 our $SKIP = {
 	't-todo/tree-construction/tests26.dat:10'
 		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
+	't-todo/tree-construction/webkit01.dat:14'
+		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad element name)',
+	't-todo/tree-construction/webkit01.dat:42'
+		=> 'requires HTML parser to construct a DOM tree which is illegal in libxml (bad attribute name)',
+	't-todo/tree-construction/webkit02.dat:4'
+		=> 'I basically just disagree with this test.',
 	};
 
 my $count;

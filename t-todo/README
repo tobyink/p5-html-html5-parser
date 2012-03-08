@@ -1,6 +1,6 @@
 These tests are from html5lib.
 
-Currently, these ones PASS:
+Currently, these ones PASS (some include subtests which are SKIPped):
 
 #   t-todo/tree-construction/adoption01.dat [13/13]
 #   t-todo/tree-construction/adoption02.dat [2/2]
@@ -19,6 +19,7 @@ Currently, these ones PASS:
 #   t-todo/tree-construction/tests18.dat [20/20]
 #   t-todo/tree-construction/tests19.dat [104/104]
 #   t-todo/tree-construction/tests2.dat [61/61]
+#   t-todo/tree-construction/tests20.dat [39/39]
 #   t-todo/tree-construction/tests25.dat [20/20]
 #   t-todo/tree-construction/tests26.dat [14/15]
 #   t-todo/tree-construction/tests3.dat [24/24]
@@ -26,14 +27,14 @@ Currently, these ones PASS:
 #   t-todo/tree-construction/tests7.dat [30/30]
 #   t-todo/tree-construction/tests8.dat [9/9]
 #   t-todo/tree-construction/tricky01.dat [9/9]
+#   t-todo/tree-construction/webkit01.dat [46/48]
+#   t-todo/tree-construction/webkit02.dat [7/8]
 
 These are close:
 
 #   t-todo/tree-construction/tests1.dat [110/114]
 #   t-todo/tree-construction/tests16.dat [185/191]
 #   t-todo/tree-construction/tests5.dat [15/16]
-#   t-todo/tree-construction/webkit01.dat [46/48]
-#   t-todo/tree-construction/webkit02.dat [7/8]
 
 These have a long way to go:
 
@@ -44,7 +45,6 @@ These have a long way to go:
 #   t-todo/tree-construction/plain-text-unsafe.dat [22/33]
 #   t-todo/tree-construction/tests11.dat [6/9]
 #   t-todo/tree-construction/tests14.dat [1/7]
-#   t-todo/tree-construction/tests20.dat [32/39]
 #   t-todo/tree-construction/tests21.dat [2/22]
 #   t-todo/tree-construction/tests22.dat [3/5]
 #   t-todo/tree-construction/tests23.dat [2/5]

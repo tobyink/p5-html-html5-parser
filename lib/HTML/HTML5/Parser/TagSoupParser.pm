@@ -2059,7 +2059,7 @@ sub _tree_construction_main ($) {
        ($token->{type} == START_TAG_TOKEN or
         $token->{type} == CHARACTER_TOKEN) and
        do {
-         my $encoding = $self->{open_elements}->[-1]->[0]->get_attribute_ns (undef, 'encoding') || '';
+         my $encoding = $self->{open_elements}->[-1]->[0]->getAttributeNS(undef, 'encoding') || '';
          $encoding =~ tr/A-Z/a-z/; ## ASCII case-insensitive.
          if ($encoding eq 'text/html' or 
              $encoding eq 'application/xhtml+xml') {
