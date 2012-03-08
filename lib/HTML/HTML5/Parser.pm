@@ -200,8 +200,8 @@ sub parse_balanced_chunk
 		(join q{}, map { "<$_>" } @a).
 		"<$parent id='$uniq'>".
 		$chunk.
-		"</$parent>".
-		(join q{}, map { "</$_>" } reverse @a);
+	''.#	"</$parent>".
+	'';#	(join q{}, map { "</$_>" } reverse @a);
 	
 	my $dom = $self->parse_html_string($document);
 	$parent = $dom->findnodes("//*[\@id='$uniq']")->get_node(1);
