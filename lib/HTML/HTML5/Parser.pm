@@ -408,7 +408,7 @@ sub source_line
 	}
 	else
 	{
-		return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_source_line'};
+		return $line;
 	}
 }
 

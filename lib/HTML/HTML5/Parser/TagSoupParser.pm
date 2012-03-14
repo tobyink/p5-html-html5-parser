@@ -16,6 +16,7 @@ use Error qw(:try);
 use IO::Handle;
 use HTML::HTML5::Parser::Tokenizer;
 use Scalar::Util qw(refaddr);
+use XML::LibXML::Devel;
 
 BEGIN
 {
@@ -31,7 +32,7 @@ our $DATA;
 sub DATA
 {
 	my $object = shift;
-	my $oaddr  = $$object;
+	my $oaddr  = XML::LibXML::Devel::node_from_perl($object);
 	
 	$DATA->{$oaddr} ||= {};
   
