@@ -286,7 +286,7 @@ sub load_html
 	elsif ( defined $args{IO} )
 		{ $dom = $parser->parse_fh( $args{IO}, $URI ) }
 	else
-		{ croak("XML::LibXML->load: specify location, string, or IO"); }
+		{ croak("HTML::HTML5::Parser->load_html: specify location, string, or IO"); }
 	
 	return $dom;
 }
