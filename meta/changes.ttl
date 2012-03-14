@@ -199,5 +199,6 @@ my:v_0-109
 		dcs:item   [ rdfs:label "Bundle test cases from html5lib."@en ; a dcs:Packaging ] ;
 		dcs:item   [ rdfs:label "Provide parse_balanced_chunk to parse HTML fragments."@en ; a dcs:Addition ] ;
 		dcs:item   [ rdfs:label "Provide dtd_element method to get more information about the DTD."@en ; a dcs:Addition ] ;
-		dcs:item   [ rdfs:label "Make source_line method work more reliably. This requires XML::LibXML::Devel, and thus a fairly recent version of XML-LibXML."@en ]
+		dcs:item   [ rdfs:label "Make source_line method work more reliably. This requires XML::LibXML::Devel, and thus a fairly recent version of XML-LibXML."@en ];
+		dcs:item   [ rdfs:label "Nodes now have an implictness flag (returned by source_line called in a list context)."@en ; a dcs:Addition ]
 		] .

@@ -403,8 +403,11 @@ sub source_line
 	
 	if (wantarray)
 	{
-		my $col = HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_source_column'};
-		return ($line, $col);
+		return (
+			$line,
+			HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_source_column'},
+			(HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'implied'} || 0),
+			);
 	}
 	else
 	{
@@ -710,8 +713,22 @@ In scalar context, C<source_line> returns the line number of the
 source code that started a particular node (element, attribute or
 comment).
 
-In list context, returns a line/column pair. (Tab characters count as
-one column, not eight.)
+In list context, returns a tuple: $line, $column, $implicitness.
+Tab characters count as one column, not eight.
+
+$implicitness indicates that the node was not explicitly marked
+up in the source code, but its existance was inferred by the parser.
+For example, in the following markup, the HTML, TITLE and P elements
+are explicit, but the HEAD and BODY elements are implicit.
+
+ <html>
+  <title>I have an implicit head</title>
+  <p>And an implicit body too!</p>
+ </html>
+
+(Note that implicit elements do still have a line number and column
+number.) The implictness indicator is a new feature, and I'd appreciate
+any bug reports where it gets things wrong.
 
 =back
 

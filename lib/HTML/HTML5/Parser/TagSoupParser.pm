@@ -15,7 +15,7 @@ our $VERSION = '0.109';
 use Error qw(:try);
 use IO::Handle;
 use HTML::HTML5::Parser::Tokenizer;
-use Scalar::Util qw(refaddr);
+use Scalar::Util qw(blessed);
 use XML::LibXML::Devel;
 
 BEGIN
@@ -31,19 +31,24 @@ BEGIN
 our $DATA;
 sub DATA
 {
-	my $object = shift;
-	my $oaddr  = XML::LibXML::Devel::node_from_perl($object);
+	my ($object, $k, $v) = @_;	
+	my $argc = @_;
 	
+	# This method doesn't work for non XLxN things. Fail silently.
+	unless (blessed($object) and $object->isa('XML::LibXML::Node'))
+	{
+		return {} if $argc==1;
+		return;
+	}
+	
+	# This seems to work much better as a unique identifier for a
+	# node than refaddr does. However, it's not a supported use
+	# for XML::LibXML::Devel, so it might cause failures. We'll see.
+	my $oaddr  = XML::LibXML::Devel::node_from_perl($object);
 	$DATA->{$oaddr} ||= {};
   
-  my ($k, $v) = @_;
-  if (scalar(@_) == 2)
-  {
-    $DATA->{$oaddr}{$k} = $v
-      if defined $k;
-  }
-    
-	return $DATA->{$oaddr}{$k} if $k;
+	$DATA->{$oaddr}{$k} = $v if $argc==3;
+	return $DATA->{$oaddr}{$k} if $argc==2;
 	return $DATA->{$oaddr};
 }
 
@@ -1332,6 +1337,7 @@ sub _tree_construction_root_element ($) {
             if defined $token->{line};
         DATA($root_element, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($root_element, implied => __LINE__);
       
     $self->{document}->setDocumentElement($root_element);
     push @{$self->{open_elements}}, [$root_element, $el_category->{html}];
@@ -2584,6 +2590,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($self->{head_element}, implied => __LINE__);
       
           $self->{open_elements}->[-1]->[0]->appendChild ($self->{head_element});
           push @{$self->{open_elements}},
@@ -2625,6 +2632,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
        DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -2689,6 +2697,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($self->{head_element}, implied => __LINE__);
       
           $self->{open_elements}->[-1]->[0]->appendChild ($self->{head_element});
           push @{$self->{open_elements}},
@@ -3178,6 +3187,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -3257,6 +3267,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($self->{head_element}, implied => __LINE__);
       
             $self->{open_elements}->[-1]->[0]->appendChild ($self->{head_element});
             $self->{insertion_mode} = AFTER_HEAD_IM;
@@ -3303,6 +3314,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -3333,6 +3345,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($self->{head_element}, implied => __LINE__);
       
           $self->{open_elements}->[-1]->[0]->appendChild($self->{head_element});
 			 
@@ -3388,6 +3401,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -3815,6 +3829,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'tbody'} || 0];
@@ -3882,6 +3897,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'tr'} || 0];
@@ -4050,6 +4066,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'colgroup'} || 0];
@@ -6913,6 +6930,7 @@ sub _tree_construction_main ($) {
             if defined $token->{line};
         DATA($el, manakai_source_column => $token->{column})
             if defined $token->{column};
+        DATA($el, implied => __LINE__);
       
           $insert->($self, $el, $open_tables);
           ## NOTE: Not inserted into |$self->{open_elements}|.
