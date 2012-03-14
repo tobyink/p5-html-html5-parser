@@ -650,10 +650,10 @@ to change an option (such as recover_silently) will make
 HTML::HTML5::Parser carp a warning. (But you can inspect the
 options.)
 
-=head2 Additional Methods
+=head2 Error Handling
 
-The module provides a few additional methods to obtain additional,
-non-DOM data from DOM nodes.
+Error handling is obviously different to XML::LibXML, as errors are
+(bugs notwithstanding) non-fatal.
 
 =over
 
@@ -670,11 +670,14 @@ Returns a list of errors that occurred during the last parse.
 
 See L<HTML::HTML5::Parser::Error>.
 
-=item C<compat_mode>
+=back
 
-  $mode = $parser->compat_mode( $doc );
-  
-Returns 'quirks', 'limited quirks' or undef (standards mode).
+=head2 Additional Methods
+
+The module provides a few methods to obtain additional, non-DOM data from
+DOM nodes.
+
+=over
 
 =item C<dtd_public_id>
 
@@ -684,6 +687,9 @@ For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 Public Identifier of the DTD used (if any).
 
+This may be called as a class or object method. (It makes
+no difference.)
+
 =item C<dtd_system_id>
 
   $sysid = $parser->dtd_system_id( $doc );
@@ -692,17 +698,37 @@ For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 System Identifier of the DTD used (if any).
 
+This may be called as a class or object method. (It makes
+no difference.)
+
 =item C<dtd_element>
 
   $element = $parser->dtd_element( $doc );
   
 For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
-root element declared in the DTD used (if any).
+root element declared in the DTD used (if any). That is,
+if the document has this doctype:
+
+  <!doctype html>
+
+... it will return "html".
 
 This may return the empty string if a DTD was present but
 did not contain a root element; or undef if no DTD was
 present.
+
+This may be called as a class or object method. (It makes
+no difference.)
+
+=item C<compat_mode>
+
+  $mode = $parser->compat_mode( $doc );
+  
+Returns 'quirks', 'limited quirks' or undef (standards mode).
+
+This may be called as a class or object method. (It makes
+no difference.)
 
 =item C<source_line>
 
