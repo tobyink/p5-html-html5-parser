@@ -1,4 +1,4 @@
-use Test::More tests => 23;
+use Test::More tests => 26;
 use HTML::HTML5::Parser;
 
 my $dom = HTML::HTML5::Parser->load_html(string => <<'HTML');
@@ -24,6 +24,11 @@ my @head = HTML::HTML5::Parser->source_line($dom->getElementsByTagName('head')->
 ok(defined $head[0], 'head element has a line number');
 ok(defined $head[1], 'head element has a col number');
 ok($head[2], 'head element implicit');
+
+my @title_text = HTML::HTML5::Parser->source_line($dom->getElementsByTagName('title')->get_node(1)->childNodes->get_node(1));
+is($title_text[0], 3, 'text node in title element has a line number');
+is($title_text[1], 10, 'text node in title element has a col number');
+ok(!$title_text[2], 'text node in title element explicit');
 
 my @para = HTML::HTML5::Parser->source_line($dom->getElementsByTagName('p')->get_node(1));
 is($para[0], 4, 'p element has correct line number');
