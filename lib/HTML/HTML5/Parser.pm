@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.109';
+our $VERSION = '0.110';
 
 use Carp;
 use HTML::HTML5::Parser::Error;
@@ -17,7 +17,7 @@ use XML::LibXML;
 
 BEGIN {
 	croak "Please upgrade to XML::LibXML 1.94"
-		if XML::LibXML->VERSION ~~ /^1\.9[12]/;
+		if XML::LibXML->VERSION =~ /^1\.9[12]/;
 }
 
 sub new

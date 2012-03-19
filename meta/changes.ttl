@@ -202,3 +202,14 @@ my:v_0-109
 		dcs:item   [ rdfs:label "Make source_line method work more reliably. This requires XML::LibXML::Devel, and thus a fairly recent version of XML-LibXML."@en ];
 		dcs:item   [ rdfs:label "Nodes now have an implictness flag (returned by source_line called in a list context)."@en ; a dcs:Addition ]
 		] .
+
+my:project :release my:v_0-110 .
+my:v_0-110
+	a               :Version ;
+	dc:issued       "2012-03-20"^^xsd:date ;
+	:revision       "0.110"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.110.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-109 ;
+		dcs:item   [ a dcs:Bugfix; rdfs:label "Removed a use of smart match which was breaking Perl 5.8.x compatibility."@en ; dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/75809> ]
+		] .

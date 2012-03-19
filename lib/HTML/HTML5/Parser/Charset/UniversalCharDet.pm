@@ -3,7 +3,7 @@ package HTML::HTML5::Parser::Charset::UniversalCharDet;
 use strict;
 use HTML::Encoding qw(encoding_from_first_chars encoding_from_html_document);
 
-our $VERSION='0.109';
+our $VERSION='0.110';
 our $DEBUG;
 
 sub _detect {
