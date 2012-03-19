@@ -211,5 +211,8 @@ my:v_0-110
 	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.110.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0-109 ;
-		dcs:item   [ a dcs:Bugfix; rdfs:label "Removed a use of smart match which was breaking Perl 5.8.x compatibility."@en ; dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/75809> ]
+		dcs:item   [ a dcs:Bugfix; rdfs:label "Removed a use of smart match which was breaking Perl 5.8.x compatibility."@en ; dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/75809> ] ;
+		dcs:item   [ rdfs:label "use XML::LibXML::Devel::SetLineNumber if it is available." ] ;
+		dcs:item   [ rdfs:label "Text nodes should keep line numbers and column numbers too." ] ;
+		dcs:item   [ rdfs:label "Comment nodes should now keep their line numbers and column numbers." ]
 		] .

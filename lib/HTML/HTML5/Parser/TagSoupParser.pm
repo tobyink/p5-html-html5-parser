@@ -117,12 +117,12 @@ sub DATA
 
 ## Namespace URLs
 
-sub HTML_NS ()  { q<http://www.w3.org/1999/xhtml> }
-sub MML_NS ()   { q<http://www.w3.org/1998/Math/MathML> }
-sub SVG_NS ()   { q<http://www.w3.org/2000/svg> }
-sub XLINK_NS () { q<http://www.w3.org/1999/xlink> }
-sub XML_NS ()   { q<http://www.w3.org/XML/1998/namespace> }
-sub XMLNS_NS () { q<http://www.w3.org/2000/xmlns/> }
+sub HTML_NS ()  { q <http://www.w3.org/1999/xhtml> }
+sub MML_NS ()   { q <http://www.w3.org/1998/Math/MathML> }
+sub SVG_NS ()   { q <http://www.w3.org/2000/svg> }
+sub XLINK_NS () { q <http://www.w3.org/1999/xlink> }
+sub XML_NS ()   { q <http://www.w3.org/XML/1998/namespace> }
+sub XMLNS_NS () { q <http://www.w3.org/2000/xmlns/> }
 
 ## Element categories
 
@@ -1257,8 +1257,12 @@ sub _tree_construction_initial ($) {
       return;
     } elsif ($token->{type} == COMMENT_TOKEN) {
       
-      my $comment = $self->{document}->createComment ($token->{data});
-      $self->{document}->appendChild ($comment);
+      my $comment = $self->{document}->createComment($token->{data});
+		DATA($comment, manakai_source_line => $token->{line})
+			if defined $token->{line};
+		DATA($comment, manakai_source_column => $token->{column})
+			if defined $token->{column};
+      $self->{document}->appendChild($comment);
       
       ## Stay in the insertion mode.
       $token = $self->_get_next_token;
@@ -1285,8 +1289,12 @@ sub _tree_construction_root_element ($) {
         redo B;
       } elsif ($token->{type} == COMMENT_TOKEN) {
         
-        my $comment = $self->{document}->createComment ($token->{data});
-        $self->{document}->appendChild ($comment);
+        my $comment = $self->{document}->createComment($token->{data});
+			DATA($comment, manakai_source_line => $token->{line})
+				if defined $token->{line};
+			DATA($comment, manakai_source_column => $token->{column})
+				if defined $token->{column};
+        $self->{document}->appendChild($comment);
         ## Stay in the insertion mode.
         $token = $self->_get_next_token;
         redo B;
@@ -2379,7 +2387,11 @@ sub _tree_construction_main ($) {
 
       } elsif ($token->{type} == COMMENT_TOKEN) {
         ## "In foreign content", comment token.
-        my $comment = $self->{document}->createComment ($token->{data});
+        my $comment = $self->{document}->createComment($token->{data});
+			DATA($comment, manakai_source_line => $token->{line})
+				if defined $token->{line};
+			DATA($comment, manakai_source_column => $token->{column})
+				if defined $token->{column};
         $self->{open_elements}->[-1]->[0]->appendChild ($comment);
         $token = $self->_get_next_token;
         next B;
@@ -2509,6 +2521,10 @@ sub _tree_construction_main ($) {
       next B;
     } elsif ($token->{type} == COMMENT_TOKEN) {
       my $comment = $self->{document}->createComment ($token->{data});
+		DATA($comment, manakai_source_line => $token->{line})
+			if defined $token->{line};
+		DATA($comment, manakai_source_column => $token->{column})
+			if defined $token->{column};
       if ($self->{insertion_mode} & AFTER_HTML_IMS) {
         
         $self->{document}->appendChild ($comment);

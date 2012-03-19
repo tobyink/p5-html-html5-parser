@@ -1,4 +1,4 @@
-use Test::More tests => 26;
+use Test::More tests => 29;
 use HTML::HTML5::Parser;
 
 my $dom = HTML::HTML5::Parser->load_html(string => <<'HTML');
@@ -9,6 +9,10 @@ my $dom = HTML::HTML5::Parser->load_html(string => <<'HTML');
     <b>This</b> <i>is</i>
     <a href="http://example.com/">a</a>
     <tt>test!</tt>
+    <!--
+        Hello
+        World
+    -->
 </html>
 HTML
 
@@ -57,3 +61,11 @@ my @href = HTML::HTML5::Parser->source_line($dom->getElementsByTagName('a')->get
 is($href[0], 6, 'href attribute has correct line number');
 is($href[1], 8, 'href attribute has correct col number');
 ok(!$href[2], 'href attribute explicit');
+
+# It's not easy to actually find comments in the DOM!
+my $comment = $dom->getElementsByTagName('p')->[0]->childNodes->[-2];
+my @comment = HTML::HTML5::Parser->source_line($comment);
+is($comment[0], 8, 'comment has correct line number')
+	or diag($comment->toString);
+is($comment[1], 5, 'comment has correct col number');
+ok(!$comment[2], 'comment is explicit');
