@@ -20,6 +20,15 @@ use XML::LibXML::Devel;
 
 BEGIN
 {
+	if (eval { require XML::LibXML::Devel::SetLineNumber; 1 })
+	{
+		*HAS_XLXDSLN = sub () { 1 };
+	}
+	else
+	{
+		*HAS_XLXDSLN = sub () { 0 };
+	}
+	
 	*XML::LibXML::Element::appendTextFromUnicode = sub {
 		my ($element, $parser, $text) = @_;
 		$text = $parser unless (defined $text or ref $parser);
@@ -46,6 +55,15 @@ sub DATA
 	# for XML::LibXML::Devel, so it might cause failures. We'll see.
 	my $oaddr  = XML::LibXML::Devel::node_from_perl($object);
 	$DATA->{$oaddr} ||= {};
+		
+	if (HAS_XLXDSLN
+	and $k eq 'manakai_source_line'
+	and int($v)
+	and int($v) eq $v
+	and $object->isa('XML::LibXML::Element')) # does not work well for attrs
+	{
+		$object->XML::LibXML::Devel::SetLineNumber::set_line_number($v);
+	}
   
 	$DATA->{$oaddr}{$k} = $v if $argc==3;
 	return $DATA->{$oaddr}{$k} if $argc==2;
@@ -6013,7 +6031,7 @@ sub _tree_construction_main ($) {
             $attr->setValue($attr_t->{value});
             DATA($attr, manakai_source_line => $attr_t->{line});
             DATA($attr, manakai_source_column => $attr_t->{column});
-            $el->setAttributeNodeNS ($attr);
+            $el->setAttributeNodeNS($attr);
           }
         }
       

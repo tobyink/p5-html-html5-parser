@@ -756,11 +756,23 @@ are explicit, but the HEAD and BODY elements are implicit.
 number.) The implictness indicator is a new feature, and I'd appreciate
 any bug reports where it gets things wrong.
 
+L<XML::LibXML::Node> has a C<line_number> method. In general this
+will always return 0 and HTML::HTML5::Parser has no way of influencing
+it. However, if you install L<XML::LibXML::Devel::SetLineNumber> on
+your system, the C<line_number> method will start working (at least for
+elements).
+
 =back
 
 =head1 SEE ALSO
 
-L<http://suika.fam.cx/www/markup/html/whatpm/Whatpm/HTML.html>
+L<http://suika.fam.cx/www/markup/html/whatpm/Whatpm/HTML.html>.
+
+L<HTML::HTML5::Writer>,
+L<HTML::HTML5::Builder>,
+L<XML::LibXML>,
+L<XML::LibXML::PrettyPrint>,
+L<XML::LibXML::Devel::SetLineNumber>.
 
 =head1 AUTHOR
 
