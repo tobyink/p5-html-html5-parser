@@ -16,8 +16,8 @@ BEGIN {
 		my $return;
 		
 		my $element = HTML::HTML5::Parser->dtd_element($self);
-		my $public  = HTML::HTML5::Parser->dtd_public_id($self);
-		my $system  = HTML::HTML5::Parser->dtd_system_id($self);
+		my $public  = HTML::HTML5::Parser->dtd_public_id($self) || '';
+		my $system  = HTML::HTML5::Parser->dtd_system_id($self) || '';
 		
 		if (defined $element)
 		{
@@ -39,6 +39,7 @@ BEGIN {
 	sub pythonDebug
 	{
 		my ($self, $indent) = @_;
+		$indent = '' unless defined $indent;
 		
 		$self->normalize;
 		
@@ -56,6 +57,7 @@ BEGIN {
 	sub pythonDebug
 	{
 		my ($self, $indent) = @_;
+		$indent = '' unless defined $indent;
 		
 		$self->normalize;
 		
@@ -95,6 +97,7 @@ BEGIN {
 	sub pythonDebug
 	{
 		my ($self, $indent) = @_;
+		$indent = '' unless defined $indent;
 		return sprintf("%s\"%s\"\n", $indent, $self->data);
 	}
 }
@@ -104,6 +107,7 @@ BEGIN {
 	sub pythonDebug
 	{
 		my ($self, $indent) = @_;
+		$indent = '' unless defined $indent;
 		return sprintf("%s<!-- %s -->\n", $indent, $self->data);
 	}
 }
@@ -113,6 +117,7 @@ BEGIN {
 	sub pythonDebug
 	{
 		my ($self, $indent) = @_;
+		$indent = '' unless defined $indent;
 		return sprintf("%s%s %s=\"%s\"\n", $indent, split(/:/, $self->nodeName), $self->value)
 			if $self->namespaceURI && $self->nodeName=~/:/;
 		return sprintf("%s%s=\"%s\"\n", $indent, $self->localname, $self->value);

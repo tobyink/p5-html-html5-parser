@@ -8,7 +8,7 @@ package HTML::HTML5::Parser::TagSoupParser;
 
 use 5.008001;
 use strict;
-#use warnings;
+no warnings;
 
 our $VERSION = '0.110';
 
@@ -56,6 +56,7 @@ BEGIN
 			if defined $token->{column};
 		
 		if (HAS_XLXDSLN
+		and exists $token->{line}
 		and int($token->{line})
 		and int($token->{line}) eq $token->{line})
 		{
@@ -86,7 +87,9 @@ sub DATA
 	$DATA->{$oaddr} ||= {};
 		
 	if (HAS_XLXDSLN
+	and defined $k
 	and $k eq 'manakai_source_line'
+	and defined $v
 	and int($v)
 	and int($v) eq $v
 	and $object->nodeType == XML_ELEMENT_NODE) # does not work well for attrs
@@ -759,6 +762,7 @@ sub parse_byte_stream ($$$$;$$) {
 
     $return = $self->parse_char_stream ($wrapped_char_stream, @args);
   };
+  DATA($return, charset => $charset_name);
   return $return;
 } # parse_byte_stream
 
@@ -1899,7 +1903,7 @@ sub _reset_insertion_mode ($) {
           $i = $_;
         }
       } # AFE
-      splice @$active_formatting_elements, $i + 1, 0, $new_element;
+      splice @$active_formatting_elements, (defined $i ? $i : 0) + 1, 0, $new_element;
       
       ## Step 15
       undef $i;

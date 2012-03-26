@@ -370,6 +370,14 @@ sub compat_mode
 	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_compat_mode'};
 }
 
+sub charset
+{
+	my $self = shift;
+	my $node = shift;
+	
+	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'charset'};
+}
+
 sub dtd_public_id
 {
 	my $self = shift;
@@ -729,6 +737,12 @@ Returns 'quirks', 'limited quirks' or undef (standards mode).
 
 This may be called as a class or object method. (It makes
 no difference.)
+
+=item C<charset>
+
+  $charset = $parser->charset( $doc );
+
+The character set apparently used by the document.
 
 =item C<source_line>
 
