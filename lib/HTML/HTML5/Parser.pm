@@ -184,7 +184,9 @@ sub parse_balanced_chunk
 {
 	my ($self, $chunk, $o) = @_;
 	my %options = %{ $o || {} };
-
+	
+	$options{as} = 'default' unless defined $options{as};
+	
 	my $w = $options{force_within} || $options{within} || 'div';
 	my $ancestors = $within{ lc $w };
 	croak "Cannot parse chunk as if within $w."

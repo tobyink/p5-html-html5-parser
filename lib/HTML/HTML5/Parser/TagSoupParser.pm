@@ -12,10 +12,10 @@ no warnings;
 
 our $VERSION = '0.110';
 
-use Error qw(:try);
 use IO::Handle;
 use HTML::HTML5::Parser::Tokenizer;
 use Scalar::Util qw(blessed);
+use Try::Tiny;
 use XML::LibXML ':libxml';
 use XML::LibXML::Devel;
 
@@ -711,7 +711,7 @@ sub parse_byte_stream ($$$$;$$) {
       # }
       
       ## Step 5
-      throw HTML::HTML5::Parser::TagSoupParser::RestartParser ();
+      HTML::HTML5::Parser::TagSoupParser::RestartParser->throw;
     } else {
       $char_stream = $orig_char_stream;
     }
@@ -734,9 +734,15 @@ sub parse_byte_stream ($$$$;$$) {
   my $return;
   try {
     $return = $self->parse_char_stream ($wrapped_char_stream, @args);  
-  } catch HTML::HTML5::Parser::TagSoupParser::RestartParser with {
-    ## NOTE: Invoked after {change_encoding}.
-
+  }
+  ## NOTE: Invoked after {change_encoding}.
+  catch {
+    unless (blessed($_)
+    and     $_->isa('HTML::HTML5::Parser::TagSoupParser::RestartParser'))
+    {
+      die $_;
+    }
+    
     if ($e_status & HTML::HTML5::Parser::Charset::Info::FALLBACK_ENCODING_IMPL ()) {
       $self->{input_encoding} = $charset->get_iana_name; ## TODO: Should we set actual charset decoder's encoding name?
       $self->{parse_error}->(level => $self->{level}->{must}, type => 'chardecode:fallback',
@@ -7404,7 +7410,18 @@ sub set_inner_html ($$$$;$) {
 } # tree construction stage
 
 package HTML::HTML5::Parser::TagSoupParser::RestartParser;
-push our @ISA, 'Error';
+
+sub new
+{
+  my ($class, %opts) = @_;
+  bless \%opts => $class;
+}
+
+sub throw
+{
+  my ($class, %opts) = @_;
+  die $class->new(%opts);
+}
 
 1;
 # $Date: 2009/09/06 23:32:06 $

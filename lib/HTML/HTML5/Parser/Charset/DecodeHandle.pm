@@ -701,10 +701,12 @@ sub read ($$$;$) {
         }
         $self->{bom_checked} = 1;
       }
-
-      my $string = Encode::decode ($self->{perl_encoding_name},
-                                   $self->{byte_buffer},
-                                   Encode::FB_QUIET ());
+      my $string = do {
+			BEGIN { $SIG{__WARN__} = sub { warn $_[0] unless $_[0] =~ /^Code point/ } }
+			Encode::decode ($self->{perl_encoding_name},
+                         $self->{byte_buffer},
+                         Encode::FB_QUIET ());
+		};
       if (length $string) {
         $self->{char_buffer} = \$string;
         $self->{char_buffer_pos} = 0;

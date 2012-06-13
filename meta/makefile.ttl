@@ -7,11 +7,11 @@
 	:version_from _:main ;
 	:readme_from _:main ;
 	:test_requires "Test::More 0.61" ;
-	:requires "Error" ;
+	:requires "Try::Tiny" ;
 	:requires "HTML::Encoding 0.55" ;
-	:requires "HTML::HTML5::Entities 0.001" ;
+	:requires "HTML::HTML5::Entities 0.002" ;
 	:requires "LWP::UserAgent" ;
-	:requires "XML::LibXML 1.90" ;
+	:requires "XML::LibXML 1.94" ;
 	:requires "XML::LibXML::Devel" ;
 	:requires "Scalar::Util" ;
 	:install_script _:html5debug , _:html2xhtml .
