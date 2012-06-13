@@ -8,7 +8,7 @@
 	:readme_from _:main ;
 	:test_requires "Test::More 0.61" ;
 	:requires "Try::Tiny" ;
-	:requires "HTML::Encoding 0.55" ;
+	:requires "IO::HTML" ;
 	:requires "HTML::HTML5::Entities 0.002" ;
 	:requires "LWP::UserAgent" ;
 	:requires "XML::LibXML 1.94" ;

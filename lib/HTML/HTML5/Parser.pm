@@ -117,7 +117,7 @@ sub parse_string
 	$opts->{'parser_used'} = 'HTML::HTML5::Parser';
 	my $dom = XML::LibXML::Document->createDocument;
 	
-	if (defined $opts->{'encoding'} || 1)
+	if (defined $opts->{'encoding'}||1)
 	{
 		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($opts->{'encoding'}, $text, $dom, sub{
 			my $err = HTML::HTML5::Parser::Error->new(@_);

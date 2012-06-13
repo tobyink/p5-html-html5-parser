@@ -1,23 +1,24 @@
 package HTML::HTML5::Parser::Charset::UniversalCharDet;
 
 use strict;
-use HTML::Encoding qw(encoding_from_first_chars encoding_from_html_document);
+use IO::HTML ();
 
 our $VERSION='0.110';
 our $DEBUG;
 
+# this really shouldn't work, but for some reason it does...
 sub _detect {
-	my $d = encoding_from_html_document($_[0], 'xhtml'=>0);
-	return {encoding=>$d} if $d;
-	$d = encoding_from_first_chars($_[0]);
-	return {encoding=>$d} if $d;
-	return {};
+	return +{ encoding => 'UTF-8' } if !utf8::is_utf8($_[0]); # huh?
+	open my $fh, '<:raw', \$_[0];
+	my $e = IO::HTML::sniff_encoding($fh => 'string');
+	return +{ encoding => $e } if defined $e;
+	return +{};
 }
 
 sub detect_byte_string ($$) {
   my $de;
   eval {
-    $de = _detect ($_[1]);
+    $de = _detect $_[1];
     1;
   } or do {
     warn $@ unless $DEBUG;
