@@ -1,6 +1,6 @@
 package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
 use strict;
-our $VERSION='0.110';
+our $VERSION='0.200';
 
 ## This module implements the tokenization phase of both HTML5 and
 ## XML5.  Notes like this are usually based on the latest HTML
