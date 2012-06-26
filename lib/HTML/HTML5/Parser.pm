@@ -10,7 +10,6 @@ our $VERSION = '0.200';
 use Carp;
 use HTML::HTML5::Parser::Error;
 use HTML::HTML5::Parser::TagSoupParser;
-use LWP::UserAgent;
 use Scalar::Util qw(blessed);
 use URI::file;
 use XML::LibXML;
@@ -32,6 +31,8 @@ sub new
 
 sub parse_file
 {
+	require HTML::HTML5::Parser::UA;
+	
 	my $self   = shift;
 	my $file   = shift;
 	my $opts   = shift || {};
@@ -44,33 +45,16 @@ sub parse_file
 			{ $file = URI::file->new_abs($file); }
 	}
 	
-	my $ua;
-	if ($opts->{'user_agent'})
-	{
-		$ua = $opts->{'user_agent'};
-	}
-	else
-	{
-		$ua = LWP::UserAgent->new;
-		$ua->agent("HTML::HTML5::Parser/".$VERSION." ");
-		$ua->default_header('Accept' => 'text/html, '
-			.'application/xhtml+xml;q=0.9, '
-			.'application/xml;q=0.1, '
-			.'text/xml;q-0.1');
-		$ua->parse_head(0);
-	}
-	
-	my $response = $ua->get($file);
+	my $response = HTML::HTML5::Parser::UA->get($file, $opts->{user_agent});
 	croak "HTTP response code was not 200 OK. (Set \$opts{ignore_http_response_code} to ignore this error.)"
-		unless ($response->code == 200 || $opts->{'ignore_http_response_code'});
+		unless ($response->{success} || $opts->{ignore_http_response_code});
 	
-	my $content = $response->decoded_content;
-	my $c_type  = $response->headers->content_type;
-	my $charset = $response->headers->content_type_charset;
+	my $content = $response->{decoded_content};
+	my $c_type  = $response->{headers}{'content-type'};
 	
 	$opts->{'response'} = $response;
 	
-	if ($c_type =~ /xml/i && !$opts->{'force_html'})
+	if ($c_type =~ /xml/i and not $opts->{'force_html'})
 	{
 		$opts->{'parser_used'} = 'XML::LibXML::Parser';
 		my $xml_parser = XML::LibXML->new;
@@ -80,11 +64,6 @@ sub parse_file
 		$xml_parser->load_catalog($opts->{'xml_catalogue'})
 			if -r $opts->{'xml_catalogue'};
 		return $xml_parser->parse_string($content);
-	}
-	
-	if (!defined $opts->{'encoding'})
-	{
-		$opts->{'encoding'} = $charset;
 	}
 	
 	return $self->parse_string($content, $opts);
@@ -488,7 +467,7 @@ C<$html_file_name> can be either a filename or an URL.
 
 Options include 'encoding' to indicate file encoding (e.g.
 'utf-8') and 'user_agent' which should be a blessed C<LWP::UserAgent>
-object to be used when retrieving URLs.
+(or L<HTTP::Tiny>) object to be used when retrieving URLs.
 
 If requesting a URL and the response Content-Type header indicates
 an XML-based media type (such as XHTML), XML::LibXML::Parser

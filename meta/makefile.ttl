@@ -10,7 +10,7 @@
 	:requires "Try::Tiny" ;
 	:requires "IO::HTML" ;
 	:requires "HTML::HTML5::Entities 0.002" ;
-	:requires "LWP::UserAgent" ;
+	:requires "HTTP::Tiny" ;
 	:requires "XML::LibXML 1.94" ;
 	:requires "XML::LibXML::Devel" ;
 	:requires "Scalar::Util" ;
