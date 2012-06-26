@@ -3,6 +3,11 @@ package HTML::HTML5::Parser::UA;
 use 5.008001;
 use strict;
 
+BEGIN {
+	$HTML::HTML5::Parser::UA::AUTHORITY = 'cpan:TOBYINK';
+	$HTML::HTML5::Parser::UA::VERSION   = '0.201_01';
+}
+
 use Encode qw(decode);
 use HTTP::Tiny;
 use URI::file;
