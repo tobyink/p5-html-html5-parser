@@ -231,12 +231,12 @@ my:v_0-200
 		dcs:item   [ rdfs:label "Passing a couple more of the html5lib test suite files." ]
 	] .
 
-my:project :release my:v_0-201_01 .
-my:v_0-201_01
+my:project :release my:v_0-202 .
+my:v_0-202
 	a               :Version ;
 	dc:issued       "2012-06-27"^^xsd:date ;
-	:revision       "0.201_01"^^xsd:string ;
-	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.201_01.tar.gz> ;
+	:revision       "0.202"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.202.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0-200 ;
 		dcs:item   [ rdfs:label "Drop dependency on LWP::UserAgent in favour of HTTP::Tiny which is part of core since 5.14." ]
