@@ -146,6 +146,15 @@ sub _get_fs
 
 HTML::HTML5::Parser::UA - simple web user agent class
 
+=head1 SYNOPSIS
+
+ use aliased 'HTML::HTML5::Parser::UA';
+ 
+ my $response = UA->get($url);
+ die unless $response->{success};
+ 
+ print $response->{decoded_content};
+
 =head1 DESCRIPTION
 
 This is a simple wrapper around HTTP::Tiny and LWP::UserAgent to smooth out
