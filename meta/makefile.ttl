@@ -14,6 +14,7 @@
 	:requires "XML::LibXML 1.94" ;
 	:requires "XML::LibXML::Devel" ;
 	:requires "Scalar::Util" ;
+	:requires "URI::file" ;
 	:install_script _:html5debug , _:html2xhtml .
 
 _:main <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#fileName> "lib/HTML/HTML5/Parser.pm" .
