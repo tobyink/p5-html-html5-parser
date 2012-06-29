@@ -241,3 +241,14 @@ my:v_0-202
 		dcs:versus my:v_0-200 ;
 		dcs:item   [ rdfs:label "Drop dependency on LWP::UserAgent in favour of HTTP::Tiny which is part of core since 5.14." ]
 	] .
+
+my:project :release my:v_0-204 .
+my:v_0-204
+	a               :Version ;
+	dc:issued       "2012-06-29"^^xsd:date ;
+	:revision       "0.204"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.204.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-202 ;
+		dcs:item   [ rdfs:label "Stop using defined-or operator in HTML::HTML5::Parser::UA, as it doesn't work in Perl 5.8."; a dcs:Bugfix ]
+	] .

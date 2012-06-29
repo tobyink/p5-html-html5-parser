@@ -5,7 +5,7 @@ use strict;
 
 BEGIN {
 	$HTML::HTML5::Parser::UA::AUTHORITY = 'cpan:TOBYINK';
-	$HTML::HTML5::Parser::UA::VERSION   = '0.202';
+	$HTML::HTML5::Parser::UA::VERSION   = '0.204';
 }
 
 use Encode qw(decode);
@@ -96,7 +96,8 @@ sub _get_tiny
 		};
 	}
 	
-	$response->{decoded_content} //= $response->{content};
+	$response->{decoded_content} = $response->{content}
+		unless defined $response->{decoded_content};
 	return $response;
 }
 
@@ -115,17 +116,17 @@ sub _get_fs
 			{ (200 => 'OK') }
 	};
 	
-	$content //= do {
+	$content ||= do {
 		if (open my $fh, '<', $file)
 			{ local $/ = <$fh> }
 		else
 			{ $status = 418; $reason = "I'm a teapot"; $content_type = 'text/plain'; $! }
 	};
 	
-	$content_type //= 'text/xml' if $file =~ /\.xml$/i;
-	$content_type //= 'application/xhtml+xml' if $file =~ /\.xht(ml)?$/i;
-	$content_type //= 'text/html' if $file =~ /\.html?$/i;
-	$content_type //= 'application/octet-stream';
+	$content_type ||= 'text/xml' if $file =~ /\.xml$/i;
+	$content_type ||= 'application/xhtml+xml' if $file =~ /\.xht(ml)?$/i;
+	$content_type ||= 'text/html' if $file =~ /\.html?$/i;
+	$content_type ||= 'application/octet-stream';
 	
 	return +{
 		success  => ($status == 200),

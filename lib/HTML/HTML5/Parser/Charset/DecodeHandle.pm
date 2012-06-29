@@ -1,7 +1,7 @@
 package HTML::HTML5::Parser::Charset::DecodeHandle;
 use strict;
 
-our $VERSION = '0.202';
+our $VERSION = '0.204';
 
 ## NOTE: |Message::Charset::Info| uses this module without calling
 ## the constructor.
