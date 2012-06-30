@@ -5,7 +5,7 @@ use strict;
 
 BEGIN {
 	$HTML::HTML5::Parser::UA::AUTHORITY = 'cpan:TOBYINK';
-	$HTML::HTML5::Parser::UA::VERSION   = '0.204';
+	$HTML::HTML5::Parser::UA::VERSION   = '0.206';
 }
 
 use Encode qw(decode);
