@@ -1,4 +1,4 @@
-use 5.010;
+use 5.008;
 use strict;
 use lib 'lib';
 use lib 't/lib';
@@ -21,6 +21,10 @@ use URI::file;
 
 eval { require Test::HTTP::Server; 1; }
 	or plan skip_all => "Could not use Test::HTTP::Server: $@";
+
+plan skip_all => "Test::HTTP::Server 0.03 fails on Win32"
+	if $^O =~ /win/i
+	&& Test::HTTP::Server->VERSION lt '0.04';
 
 plan tests => 3;
 
@@ -50,6 +54,6 @@ my $dom = HTML::HTML5::Parser->load_html(location => $baseuri.'doc1');
 is(
 	$dom->getElementsByTagName('title')->shift->textContent,
 	'Test!',
-	'UA usage by parser'
-)
+	'UA usage by parser',
+);
 
