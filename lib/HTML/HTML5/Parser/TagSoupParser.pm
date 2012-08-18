@@ -2520,9 +2520,9 @@ sub _tree_construction_main ($) {
       $self->{parse_error}->(level => $self->{level}->{must}, type => 'not first start tag', token => $token);
       my $top_el = $self->{open_elements}->[0]->[0];
       for my $attr_name (keys %{$token->{attributes}}) {
-        unless ($top_el->hasAttributeNS(undef, $attr_name)) {
-          $top_el->setAttributeNS
-            (undef, $attr_name, 
+        unless ($top_el->hasAttribute($attr_name)) {
+          $top_el->setAttribute
+            ($attr_name, 
              $token->{attributes}->{$attr_name}->{value});
         }
       }
@@ -5536,9 +5536,9 @@ sub _tree_construction_main ($) {
           delete $self->{frameset_ok};
           my $body_el = $self->{open_elements}->[1]->[0];
           for my $attr_name (keys %{$token->{attributes}}) {
-            unless ($body_el->hasAttributeNS(undef, $attr_name)) {
+            unless ($body_el->hasAttribute($attr_name)) {
               
-              $body_el->setAttributeNS(undef, $attr_name,
+              $body_el->setAttribute($attr_name,
                  $token->{attributes}->{$attr_name}->{value});
             }
           }

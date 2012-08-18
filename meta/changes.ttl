@@ -264,3 +264,19 @@ my:v_0-206
 		dcs:item   [ rdfs:label "Remove 'use 5.010' from t/07ua.t."; a dcs:Bugfix ];
 		dcs:item   [ rdfs:label "Disable t/07ua.t and t/08ua-lwp.t on Windows because Test::HTTP::Server doesn't work on that platform."; a dcs:Bugfix; rdfs:seeAlso <https://rt.cpan.org/Ticket/Display.html?id=78118> ]
 	] .
+
+my:project :release my:v_0-207_01 .
+my:v_0-207_01
+	a               :Version ;
+	dc:issued       "2012-08-19"^^xsd:date ;
+	:revision       "0.207_01"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.207_01.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-206 ;
+		dcs:item [
+			a dcs:Bugfix; 
+			rdfs:label "If two <html> tags were in the same file, attributes on the second <html> element could cause crashes."@en;
+			dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/79019>;
+			dcs:thanks [ foaf:name "Luben Karavelov" ];
+		];
+	] .
