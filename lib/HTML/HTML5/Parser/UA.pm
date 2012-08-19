@@ -26,13 +26,17 @@ sub get
 		{ goto \&_get_lwp }
 	if ($uri =~ /^file:/i)
 		{ goto \&_get_fs }
-	
+
 	goto \&_get_tiny;
 }
 
 sub _get_lwp
 {
-	require LWP::UserAgent;
+	eval "require LWP::UserAgent; 1"
+	or do {
+		require Carp;
+		Carp::croak("could not load LWP::UserAgent");
+	};
 	
 	my ($class, $uri, $ua) = @_;
 

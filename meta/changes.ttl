@@ -273,6 +273,7 @@ my:v_0-207_01
 	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.207_01.tar.gz> ;
 	dcs:changeset [
 		dcs:versus my:v_0-206 ;
+		dcs:item [ rdfs:label "Minor fix re LWP-independence."; a dcs:Bugfix ];
 		dcs:item [
 			a dcs:Bugfix; 
 			rdfs:label "If two <html> tags were in the same file, attributes on the second <html> element could cause crashes."@en;
