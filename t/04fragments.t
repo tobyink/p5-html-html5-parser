@@ -31,3 +31,17 @@ ok(
 	'mark outliers',
 	);
 
+=head1 PURPOSE
+
+Test C<parse_balanced_chunk> method.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

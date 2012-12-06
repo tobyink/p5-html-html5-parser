@@ -57,3 +57,17 @@ is(
 	'UA usage by parser',
 );
 
+=head1 PURPOSE
+
+Check that L<HTML::HTML5::Parser::UA> works with L<HTTP::Tiny>.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

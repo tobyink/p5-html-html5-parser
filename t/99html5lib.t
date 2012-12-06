@@ -1,5 +1,3 @@
-# Tests from html5lib's testdata/tree-construction.
-
 use Test::More;
 use HTML::HTML5::Parser;
 
@@ -333,3 +331,21 @@ if (@passes)
 		for @passes;
 }
 
+=head1 PURPOSE
+
+Tests from html5lib's testdata/tree-construction.
+
+=head1 SEE ALSO
+
+L<http://code.google.com/p/html5lib/source/browse/testdata/tree-construction>.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

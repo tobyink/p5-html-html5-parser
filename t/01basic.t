@@ -12,3 +12,19 @@ can_ok $parser, qw/
 	compat_mode dtd_public_id dtd_system_id dtd_element
 	source_line
 	/;
+
+=head1 PURPOSE
+
+Test that L<HTML::HTML5::Parser> can be loaded and instantiated, and that
+the object has the expected methods.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

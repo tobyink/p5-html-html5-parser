@@ -24,3 +24,18 @@ is($parser->dtd_public_id($dom), "+//IDN demiblog.org//Foo Bar//EN", "dtd_public
 my @italics = $dom->getElementsByTagName('i');
 my $lone_letter = $italics[1];
 is($lone_letter->textContent, 't<', "parsing seems to follow HTML5 rules");
+
+=head1 PURPOSE
+
+Test basic functionality.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

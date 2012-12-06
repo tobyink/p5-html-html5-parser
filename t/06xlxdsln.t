@@ -51,3 +51,19 @@ is(
 	6,
 	'a element has correct line number',
 	);
+
+=head1 PURPOSE
+
+Check that L<XML::LibXML::Devel::SetLineNumber> can be used to get line
+number information for XML elements.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.

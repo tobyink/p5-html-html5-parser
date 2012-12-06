@@ -69,3 +69,18 @@ is($comment[0], 8, 'comment has correct line number')
 	or diag($comment->toString);
 is($comment[1], 5, 'comment has correct col number');
 ok(!$comment[2], 'comment is explicit');
+
+=head1 PURPOSE
+
+Check that line/column numbers are reported.
+
+=head1 AUTHOR
+
+Toby Inkster, E<lt>tobyink@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENCE
+
+Copyright (C) 2012 by Toby Inkster
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
