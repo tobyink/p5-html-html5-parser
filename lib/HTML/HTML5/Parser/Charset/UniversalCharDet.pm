@@ -3,7 +3,7 @@ package HTML::HTML5::Parser::Charset::UniversalCharDet;
 use strict;
 use IO::HTML ();
 
-our $VERSION='0.207_01';
+our $VERSION='0.208';
 our $DEBUG;
 
 # this really shouldn't work, but for some reason it does...
