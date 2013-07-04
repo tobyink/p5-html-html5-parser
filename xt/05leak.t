@@ -46,7 +46,7 @@ for my $sv (@{walk_arena()}) {
     next if $sv =~ /Charset::Info/;
     next if refaddr $sv == refaddr \$yes;
     next if $seen{refaddr $sv};
-    diag(Devel::FindRef::track($sv));
+#    diag(Devel::FindRef::track($sv));
 }
 
 __DATA__
