@@ -84,6 +84,7 @@ sub DATA
 	# node than refaddr does. However, it's not a supported use
 	# for XML::LibXML::Devel, so it might cause failures. We'll see.
 	my $oaddr  = XML::LibXML::Devel::node_from_perl($object);
+    warn $oaddr;
 	$DATA->{$oaddr} ||= {};
 		
 	if (HAS_XLXDSLN
@@ -717,11 +718,20 @@ sub parse_byte_stream ($$$$;$$) {
     }
   }; # $self->{change_encoding}
 
+  # XXX IF YOU PUT $SELF IN HERE YOU GET HUGE FAT MEMORY LEAKS
+  my %x = (
+      level => $self->{level}{must},
+      layer => 'encode',
+      line  => $self->{line},
+      column => $self->{column} + 1,
+      error  => $self->{parse_error},
+  );
   my $char_onerror = sub {
     my (undef, $type, %opt) = @_;
-    $self->{parse_error}->(level => $self->{level}->{must}, layer => 'encode',
-                    line => $self->{line}, column => $self->{column} + 1,
-                    %opt, type => $type);
+    $x{error}->(
+        level => $x{level}, layer => $x{layer},
+        line  => $x{line}, column => $x{column},
+        %opt, $type);
     if ($opt{octets}) {
       ${$opt{octets}} = "\x{FFFD}"; # relacement character
     }
@@ -946,6 +956,7 @@ sub new ($) {
       info => 'i',
       uncertain => 'u',
     },
+    _debug_cache => {},
   }, $class;
   $self->{set_nc} = sub {
     $self->{nc} = -1;
