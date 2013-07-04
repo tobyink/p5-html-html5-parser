@@ -22,10 +22,11 @@ BEGIN {
 sub new
 {
 	my $class = shift;
+    my %p = @_;
 	my $self  = bless {
-		'errors' => [],
+		errors => [],
+        parser => HTML::HTML5::Parser::TagSoupParser->new(%p),
 		}, $class;
-	
 	return $self;
 }
 
@@ -91,22 +92,26 @@ sub parse_string
 	my $self = shift;
 	my $text = shift;
 	my $opts = shift || {};
-	
+
 	$self->{'errors'} = [];
 	$opts->{'parser_used'} = 'HTML::HTML5::Parser';
 	my $dom = XML::LibXML::Document->createDocument;
-	
+
 	if (defined $opts->{'encoding'}||1)
 	{
-		HTML::HTML5::Parser::TagSoupParser->parse_byte_string($opts->{'encoding'}, $text, $dom, sub{
-			my $err = HTML::HTML5::Parser::Error->new(@_);
-			$self->{error_handler}->($err) if $self->{error_handler};
-			push @{$self->{'errors'}}, $err;
+        # XXX AGAIN DO THIS TO STOP ENORMOUS MEMORY LEAKS
+        my ($errh, $errors) = @{$self}{qw(error_handler errors)};
+		$self->{parser}->parse_byte_string(
+            $opts->{'encoding'}, $text, $dom,
+            sub {
+                my $err = HTML::HTML5::Parser::Error->new(@_);
+                $errh->($err) if $errh;
+                push @$errors, $err;
 			});
 	}
 	else
 	{
-		HTML::HTML5::Parser::TagSoupParser->parse_char_string($text, $dom, sub{
+		$self->{parser}->parse_char_string($text, $dom, sub{
 			my $err = HTML::HTML5::Parser::Error->new(@_);
 			$self->{error_handler}->($err) if $self->{error_handler};
 			push @{$self->{'errors'}}, $err;
@@ -348,7 +353,7 @@ sub compat_mode
 	my $self = shift;
 	my $node = shift;
 	
-	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_compat_mode'};
+	return $self->{parser}->_data($node)->{'manakai_compat_mode'};
 }
 
 sub charset
@@ -356,7 +361,7 @@ sub charset
 	my $self = shift;
 	my $node = shift;
 	
-	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'charset'};
+	return $self->{parser}->_data($node)->{'charset'};
 }
 
 sub dtd_public_id
@@ -364,7 +369,7 @@ sub dtd_public_id
 	my $self = shift;
 	my $node = shift;
 	
-	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'DTD_PUBLIC_ID'};
+	return $self->{parser}->_data($node)->{'DTD_PUBLIC_ID'};
 }
 
 sub dtd_system_id
@@ -372,7 +377,7 @@ sub dtd_system_id
 	my $self = shift;
 	my $node = shift;
 	
-	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'DTD_SYSTEM_ID'};
+	return $self->{parser}->_data($node)->{'DTD_SYSTEM_ID'};
 }
 
 sub dtd_element
@@ -380,22 +385,24 @@ sub dtd_element
 	my $self = shift;
 	my $node = shift;
 	
-	return HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'DTD_ELEMENT'};
+	return $self->{parser}->_data($node)->{'DTD_ELEMENT'};
 }
 
 sub source_line
 {
 	my $self = shift;
 	my $node = shift;
-	
-	my $line = HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_source_line'};
-	
+
+    my $data = ref $self ? $self->{parser}->_data($node) :
+        HTML::HTML5::Parser::TagSoupParser::DATA($node);
+	my $line = $data->{'manakai_source_line'};
+
 	if (wantarray)
 	{
 		return (
 			$line,
-			HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'manakai_source_column'},
-			(HTML::HTML5::Parser::TagSoupParser::DATA($node)->{'implied'} || 0),
+			$data->{'manakai_source_column'},
+			($data->{'implied'} || 0),
 			);
 	}
 	else
@@ -449,8 +456,15 @@ Changes include:
 =item C<new>
 
   $parser = HTML::HTML5::Parser->new;
+  # or
+  $parser = HTML::HTML5::Parser->new(no_cache => 1);
 
-The constructor does not do anything interesting.
+The constructor does nothing interesting besides take one flag
+argument, C<no_cache =E<gt> 1>, to disable the global element metadata
+cache. Disabling the cache is handy for conserving memory if you parse
+a large number of documents, however, class methods such as
+C</source_line> will not work, and must be run from an instance of
+this parser.
 
 =back
 
