@@ -45,16 +45,16 @@ BEGIN
 		$element->appendText($text);
 		return;
 	}
-	
+
 	my $textnode = XML::LibXML::Text->new($text);
-	
+
 	if ($token)
 	{
-		DATA($textnode, manakai_source_line => $token->{line})
-			if defined $token->{line};
-		DATA($textnode, manakai_source_column => $token->{column})
-			if defined $token->{column};
-		
+		$parser->_data($textnode, manakai_source_line => $token->{line})
+            if $parser and defined $token->{line};
+		$parser->_data($textnode, manakai_source_column => $token->{column})
+            if $parser and defined $token->{column};
+
 		if (HAS_XLXDSLN
 		and exists $token->{line}
 		and int($token->{line})
@@ -63,29 +63,39 @@ BEGIN
 			$textnode->XML::LibXML::Devel::SetLineNumber::set_line_number($token->{line});
 		}
 	}
-	
+
 	return $element->appendChild($textnode);
 };
 
-our $DATA;
-sub DATA
+our $DATA = {};
+sub DATA {
+    _data(undef, @_);
+}
+
+sub _data
 {
-	my ($object, $k, $v) = @_;	
+    my $self = shift;
+	my ($object, $k, $v) = @_;
 	my $argc = @_;
-	
 	# This method doesn't work for non XLxN things. Fail silently.
 	unless (blessed($object) and $object->isa('XML::LibXML::Node'))
 	{
 		return {} if $argc==1;
 		return;
 	}
-	
+
 	# This seems to work much better as a unique identifier for a
 	# node than refaddr does. However, it's not a supported use
 	# for XML::LibXML::Devel, so it might cause failures. We'll see.
-	my $oaddr  = XML::LibXML::Devel::node_from_perl($object);
-	$DATA->{$oaddr} ||= {};
-		
+	my $oaddr = XML::LibXML::Devel::node_from_perl($object);
+	my $data;
+    if (ref $self) {
+        $data = $self->{_debug_cache}{$oaddr} ||= {};
+    }
+    else {
+        $data = $DATA->{$oaddr} ||= {};
+    }
+
 	if (HAS_XLXDSLN
 	and defined $k
 	and $k eq 'manakai_source_line'
@@ -96,10 +106,10 @@ sub DATA
 	{
 		$object->XML::LibXML::Devel::SetLineNumber::set_line_number($v);
 	}
-  
-	$DATA->{$oaddr}{$k} = $v if $argc==3;
-	return $DATA->{$oaddr}{$k} if $argc==2;
-	return $DATA->{$oaddr};
+
+	$data->{$k} = $v   if $argc==3;
+	return $data->{$k} if $argc==2;
+	return $data;
 }
 
 ## NOTE: This module don't check all HTML5 parse errors; character
@@ -717,11 +727,20 @@ sub parse_byte_stream ($$$$;$$) {
     }
   }; # $self->{change_encoding}
 
+  # XXX IF YOU PUT $SELF IN HERE YOU GET HUGE FAT MEMORY LEAKS
+  my %x = (
+      level => $self->{level}{must},
+      layer => 'encode',
+      line  => $self->{line},
+      column => $self->{column} + 1,
+      error  => $self->{parse_error},
+  );
   my $char_onerror = sub {
     my (undef, $type, %opt) = @_;
-    $self->{parse_error}->(level => $self->{level}->{must}, layer => 'encode',
-                    line => $self->{line}, column => $self->{column} + 1,
-                    %opt, type => $type);
+    $x{error}->(
+        level => $x{level}, layer => $x{layer},
+        line  => $x{line}, column => $x{column},
+        %opt, type => $type);
     if ($opt{octets}) {
       ${$opt{octets}} = "\x{FFFD}"; # relacement character
     }
@@ -768,7 +787,7 @@ sub parse_byte_stream ($$$$;$$) {
 
     $return = $self->parse_char_stream ($wrapped_char_stream, @args);
   };
-  DATA($return, charset => $charset_name);
+  $self->_data($return, charset => $charset_name);
   return $return;
 } # parse_byte_stream
 
@@ -935,8 +954,9 @@ sub parse_char_stream ($$$;$$) {
   return $doc;
 } # parse_char_stream
 
-sub new ($) {
+sub new ($;@) {
   my $class = shift;
+  my %p = @_;
   my $self = bless {
     level => {
       must => 'm',
@@ -946,6 +966,7 @@ sub new ($) {
       info => 'i',
       uncertain => 'u',
     },
+    _debug_cache => $p{no_cache} ? {} : $DATA,
   }, $class;
   $self->{set_nc} = sub {
     $self->{nc} = -1;
@@ -1011,19 +1032,19 @@ sub IN_COLUMN_GROUP_IM () { 0b10 }
 sub _initialize_tree_constructor ($) {
   my $self = shift;
   ## NOTE: $self->{document} MUST be specified before this method is called
-  DATA($self->{document})->{strict_error_checking} = 0;
+  $self->_data($self->{document})->{strict_error_checking} = 0;
   ## TODO: Turn mutation events off # MUST
   ## TODO: Turn loose Document option (manakai extension) on
-  DATA($self->{document})->{manakai_is_html} = 1; # MUST
-  DATA($self->{document})->{manakai_source_line} = 1;
-  DATA($self->{document})->{manakai_source_column} = 1;
+  $self->_data($self->{document})->{manakai_is_html} = 1; # MUST
+  $self->_data($self->{document})->{manakai_source_line} = 1;
+  $self->_data($self->{document})->{manakai_source_column} = 1;
 
   $self->{frameset_ok} = 1;
 } # _initialize_tree_constructor
 
 sub _terminate_tree_constructor ($) {
   my $self = shift;
-  DATA($self->{document}, strict_error_checking => 1);
+  $self->_data($self->{document}, strict_error_checking => 1);
   ## TODO: Turn mutation events on
 } # _terminate_tree_constructor
 
@@ -1106,19 +1127,19 @@ sub _tree_construction_initial ($) {
         #
       }
  
-		DATA($self->{'document'}, 'DTD_PUBLIC_ID', $token->{pubid});
-		DATA($self->{'document'}, 'DTD_SYSTEM_ID', $token->{sysid});
-		DATA($self->{'document'}, 'DTD_ELEMENT',   (defined $token->{name}?$token->{name}:''));
-		DATA($self->{'document'}, 'DTD_COLUMN',    $token->{column});
-		DATA($self->{'document'}, 'DTD_LINE',      $token->{line});
+		$self->_data($self->{'document'}, 'DTD_PUBLIC_ID', $token->{pubid});
+		$self->_data($self->{'document'}, 'DTD_SYSTEM_ID', $token->{sysid});
+		$self->_data($self->{'document'}, 'DTD_ELEMENT',   (defined $token->{name}?$token->{name}:''));
+		$self->_data($self->{'document'}, 'DTD_COLUMN',    $token->{column});
+		$self->_data($self->{'document'}, 'DTD_LINE',      $token->{line});
 
     # TOBYINK
-		DATA($self->{'document'}, isHTML4 => 1)
+		$self->_data($self->{'document'}, isHTML4 => 1)
 			if (($token->{pubid}||'') =~ /html 4/i or ($token->{sysid}||'') =~ /html4/i);
 
       if ($token->{quirks} or $doctype_name ne 'html') {
         
-        DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+        $self->_data($self->{document})->{'manakai_compat_mode'} = 'quirks';
       } elsif (defined $token->{pubid}) {
         my $pubid = $token->{pubid};
         $pubid =~ tr/a-z/A-Z/; ## ASCII case-insensitive.
@@ -1191,20 +1212,20 @@ sub _tree_construction_initial ($) {
             $pubid eq "-/W3C/DTD HTML 4.0 TRANSITIONAL/EN" or
             $pubid eq "HTML") {
           
-          DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+          $self->_data($self->{document})->{'manakai_compat_mode'} = 'quirks';
         } elsif ($pubid =~ m[^-//W3C//DTD HTML 4.01 FRAMESET//] or
                  $pubid =~ m[^-//W3C//DTD HTML 4.01 TRANSITIONAL//]) {
           if (defined $token->{sysid}) {
             
-            DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+            $self->_data($self->{document})->{'manakai_compat_mode'} = 'quirks';
           } else {
             
-            DATA($self->{document})->{'manakai_compat_mode'} = 'limited quirks';
+            $self->_data($self->{document})->{'manakai_compat_mode'} = 'limited quirks';
           }
         } elsif ($pubid =~ m[^-//W3C//DTD XHTML 1.0 FRAMESET//] or
                  $pubid =~ m[^-//W3C//DTD XHTML 1.0 TRANSITIONAL//]) {
           
-          DATA($self->{document})->{'manakai_compat_mode'} ='limited quirks';
+          $self->_data($self->{document})->{'manakai_compat_mode'} ='limited quirks';
         } else {
           
         }
@@ -1217,7 +1238,7 @@ sub _tree_construction_initial ($) {
         if ($sysid eq "http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtd") {
           ## NOTE: Ensure that |PUBLIC "(limited quirks)" "(quirks)"|
           ## is signaled as in quirks mode!
-          DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+          $self->_data($self->{document})->{'manakai_compat_mode'} = 'quirks';
           
         } else {
           
@@ -1235,10 +1256,10 @@ sub _tree_construction_initial ($) {
               END_OF_FILE_TOKEN, 1,
              }->{$token->{type}}) {
       
-		unless (DATA($self->{'document'}, 'manakai_is_srcdoc'))
+		unless ($self->_data($self->{'document'}, 'manakai_is_srcdoc'))
 		{
 			$self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE', token => $token);
-			DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+			$self->_data($self->{document})->{'manakai_compat_mode'} = 'quirks';
 		}
       ## Go to the "before html" insertion mode.
       ## reprocess
@@ -1261,16 +1282,16 @@ sub _tree_construction_initial ($) {
       }
 
       $self->{parse_error}->(level => $self->{level}->{must}, type => 'no DOCTYPE', token => $token);
-      DATA($self->{document})->{'manakai_compat_mode'} = 'quirks';
+      $self->_data($self->{document})->{'manakai_compat_mode'} = 'quirks';
       ## Go to the "before html" insertion mode.
       ## reprocess
       return;
     } elsif ($token->{type} == COMMENT_TOKEN) {
       
       my $comment = $self->{document}->createComment($token->{data});
-		DATA($comment, manakai_source_line => $token->{line})
+		$self->_data($comment, manakai_source_line => $token->{line})
 			if defined $token->{line};
-		DATA($comment, manakai_source_column => $token->{column})
+		$self->_data($comment, manakai_source_column => $token->{column})
 			if defined $token->{column};
       $self->{document}->appendChild($comment);
       
@@ -1300,9 +1321,9 @@ sub _tree_construction_root_element ($) {
       } elsif ($token->{type} == COMMENT_TOKEN) {
         
         my $comment = $self->{document}->createComment($token->{data});
-			DATA($comment, manakai_source_line => $token->{line})
+			$self->_data($comment, manakai_source_line => $token->{line})
 				if defined $token->{line};
-			DATA($comment, manakai_source_column => $token->{column})
+			$self->_data($comment, manakai_source_column => $token->{column})
 				if defined $token->{column};
         $self->{document}->appendChild($comment);
         ## Stay in the insertion mode.
@@ -1338,14 +1359,14 @@ sub _tree_construction_root_element ($) {
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
 			 next unless $attr;
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $root_element->setAttributeNodeNS($attr);
         }
       
-        DATA($root_element, manakai_source_line => $token->{line})
+        $self->_data($root_element, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($root_element, manakai_source_column => $token->{column})
+        $self->_data($root_element, manakai_source_column => $token->{column})
             if defined $token->{column};
       
           $self->{document}->setDocumentElement($root_element);
@@ -1398,11 +1419,11 @@ sub _tree_construction_root_element ($) {
     
       $root_element = $self->{document}->createElementNS((HTML_NS), 'html');
     
-        DATA($root_element, manakai_source_line => $token->{line})
+        $self->_data($root_element, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($root_element, manakai_source_column => $token->{column})
+        $self->_data($root_element, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($root_element, implied => __LINE__);
+        $self->_data($root_element, implied => __LINE__);
       
     $self->{document}->setDocumentElement($root_element);
     push @{$self->{open_elements}}, [$root_element, $el_category->{html}];
@@ -1520,14 +1541,14 @@ sub _reset_insertion_mode ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -1562,14 +1583,14 @@ sub _reset_insertion_mode ($) {
           my $attr_t =  $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $script_el->setAttributeNodeNS($attr);
         }
       
-        DATA($script_el, manakai_source_line => $token->{line})
+        $self->_data($script_el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($script_el, manakai_source_column => $token->{column})
+        $self->_data($script_el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
 
@@ -1811,14 +1832,14 @@ sub _reset_insertion_mode ($) {
           my $attr_t =  $node_token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $new_element->[0]->setAttributeNodeNS($attr);
         }
       
-        DATA($new_element->[0], manakai_source_line => $node_token->{line})
+        $self->_data($new_element->[0], manakai_source_line => $node_token->{line})
             if defined $node_token->{line};
-        DATA($new_element->[0], manakai_source_column => $node_token->{column})
+        $self->_data($new_element->[0], manakai_source_column => $node_token->{column})
             if defined $node_token->{column};
       
           $new_element->[1] = $node->[1];
@@ -1877,14 +1898,14 @@ sub _reset_insertion_mode ($) {
           my $attr_t =  $formatting_element->[2]->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $new_element->[0]->setAttributeNodeNS($attr);
         }
       
-        DATA($new_element->[0], manakai_source_line => $formatting_element->[2]->{line})
+        $self->_data($new_element->[0], manakai_source_line => $formatting_element->[2]->{line})
             if defined $formatting_element->[2]->{line};
-        DATA($new_element->[0], manakai_source_column => $formatting_element->[2]->{column})
+        $self->_data($new_element->[0], manakai_source_column => $formatting_element->[2]->{column})
             if defined $formatting_element->[2]->{column};
       
           $new_element->[1] = $formatting_element->[1];
@@ -2305,15 +2326,15 @@ sub _tree_construction_main ($) {
 			 if ($attr)
 			 {
 				 $attr->setValue($attr_t->{value});
-				 DATA($attr, manakai_source_line => $attr_t->{line});
-				 DATA($attr, manakai_source_column => $attr_t->{column});
+				 $self->_data($attr, manakai_source_line => $attr_t->{line});
+				 $self->_data($attr, manakai_source_column => $attr_t->{column});
 				 $el->setAttributeNodeNS($attr);
 			 }
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -2398,9 +2419,9 @@ sub _tree_construction_main ($) {
       } elsif ($token->{type} == COMMENT_TOKEN) {
         ## "In foreign content", comment token.
         my $comment = $self->{document}->createComment($token->{data});
-			DATA($comment, manakai_source_line => $token->{line})
+			$self->_data($comment, manakai_source_line => $token->{line})
 				if defined $token->{line};
-			DATA($comment, manakai_source_column => $token->{column})
+			$self->_data($comment, manakai_source_column => $token->{column})
 				if defined $token->{column};
         $self->{open_elements}->[-1]->[0]->appendChild ($comment);
         $token = $self->_get_next_token;
@@ -2531,9 +2552,9 @@ sub _tree_construction_main ($) {
       next B;
     } elsif ($token->{type} == COMMENT_TOKEN) {
       my $comment = $self->{document}->createComment ($token->{data});
-		DATA($comment, manakai_source_line => $token->{line})
+		$self->_data($comment, manakai_source_line => $token->{line})
 			if defined $token->{line};
-		DATA($comment, manakai_source_column => $token->{column})
+		$self->_data($comment, manakai_source_column => $token->{column})
 			if defined $token->{column};
       if ($self->{insertion_mode} & AFTER_HTML_IMS) {
         
@@ -2627,7 +2648,7 @@ sub _tree_construction_main ($) {
     if ($self->{insertion_mode} == IN_HEAD_IM and
         ($token->{tag_name}||'') eq 'object' and
         $token->{type} == END_TAG_TOKEN and
-        DATA($self->{'document'}, 'isHTML4')) {
+        $self->_data($self->{'document'}, 'isHTML4')) {
           
       pop @{$self->{open_elements}}
         if $self->{open_elements}->[-1]->[0]->localname eq 'object';
@@ -2659,11 +2680,11 @@ sub _tree_construction_main ($) {
           
       $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
-        DATA($self->{head_element}, manakai_source_line => $token->{line})
+        $self->_data($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($self->{head_element}, manakai_source_column => $token->{column})
+        $self->_data($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($self->{head_element}, implied => __LINE__);
+        $self->_data($self->{head_element}, implied => __LINE__);
       
           $self->{open_elements}->[-1]->[0]->appendChild ($self->{head_element});
           push @{$self->{open_elements}},
@@ -2701,11 +2722,11 @@ sub _tree_construction_main ($) {
       
       $el = $self->{document}->createElementNS((HTML_NS), 'body');
 	 
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-       DATA($el, manakai_source_column => $token->{column})
+       $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -2726,14 +2747,14 @@ sub _tree_construction_main ($) {
           my $attr_t =  $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr,manakai_source_line => $attr_t->{line});
-          DATA($attr,manakai_source_column => $attr_t->{column});
+          $self->_data($attr,manakai_source_line => $attr_t->{line});
+          $self->_data($attr,manakai_source_column => $attr_t->{column});
           $self->{head_element}->setAttributeNodeNS ($attr);
         }
       
-        DATA($self->{head_element}, manakai_source_line => $token->{line})
+        $self->_data($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($self->{head_element}, manakai_source_column => $token->{column})
+        $self->_data($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
       
             $self->{open_elements}->[-1]->[0]->appendChild($self->{head_element});
@@ -2766,11 +2787,11 @@ sub _tree_construction_main ($) {
           
       $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
-        DATA($self->{head_element}, manakai_source_line => $token->{line})
+        $self->_data($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($self->{head_element}, manakai_source_column => $token->{column})
+        $self->_data($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($self->{head_element}, implied => __LINE__);
+        $self->_data($self->{head_element}, implied => __LINE__);
       
           $self->{open_elements}->[-1]->[0]->appendChild ($self->{head_element});
           push @{$self->{open_elements}},
@@ -2816,14 +2837,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS($attr);
         }
       
-        DATA($el,manakai_source_line => $token->{line})
+        $self->_data($el,manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el,manakai_source_column => $token->{column})
+        $self->_data($el,manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -2859,14 +2880,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -2896,14 +2917,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -2944,14 +2965,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -2970,7 +2991,7 @@ sub _tree_construction_main ($) {
                       ->($self, $token->{attributes}->{charset}->{value},
                          $token);
                   
-                  DATA($meta_el->[0]->getAttributeNodeNS (undef, 'charset'),
+                  $self->_data($meta_el->[0]->getAttributeNodeNS (undef, 'charset'),
                       manakai_has_reference => $token->{attributes}->{charset}->{has_reference});
                 } elsif ($token->{attributes}->{content} and
                          $token->{attributes}->{'http-equiv'}) {
@@ -2989,7 +3010,7 @@ sub _tree_construction_main ($) {
                     $self->{change_encoding}
                         ->($self, defined $1 ? $1 : defined $2 ? $2 : $3,
                            $token);
-                    DATA($meta_el->[0]->getAttributeNodeNS (undef, 'content'),
+                    $self->_data($meta_el->[0]->getAttributeNodeNS (undef, 'content'),
                         manakai_has_reference => $token->{attributes}->{content}->{has_reference});
                   } else {
                     
@@ -2998,12 +3019,12 @@ sub _tree_construction_main ($) {
               } else {
                 if ($token->{attributes}->{charset}) {
                   
-                  DATA($meta_el->[0]->getAttributeNodeNS(undef, 'charset'),
+                  $self->_data($meta_el->[0]->getAttributeNodeNS(undef, 'charset'),
                       manakai_has_reference => $token->{attributes}->{charset}->{has_reference});
                 }
                 if ($token->{attributes}->{content}) {
                   
-                  DATA($meta_el->[0]->getAttributeNodeNS(undef, 'content'),
+                  $self->_data($meta_el->[0]->getAttributeNodeNS(undef, 'content'),
                       manakai_has_reference => $token->{attributes}->{content}->{has_reference});
                 }
               }
@@ -3078,14 +3099,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -3168,14 +3189,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -3198,19 +3219,19 @@ sub _tree_construction_main ($) {
         # BEGIN:TOBYINK
         } elsif ($self->{insertion_mode} == IN_HEAD_IM and
                  $token->{tag_name} =~ m'^(object|param)$' and
-                 DATA($self->{'document'}, 'isHTML4')) {
+                 $self->_data($self->{'document'}, 'isHTML4')) {
           {
             my $el = $self->{document}->createElementNS((HTML_NS), $token->{tag_name});        
             for my $attr_name (keys %{  $token->{attributes}}) {
               my $attr_t =   $token->{attributes}->{$attr_name};
               my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
               $attr->setValue($attr_t->{value});
-              DATA($attr, manakai_source_line => $attr_t->{line});
-              DATA($attr, manakai_source_column => $attr_t->{column});
+              $self->_data($attr, manakai_source_line => $attr_t->{line});
+              $self->_data($attr, manakai_source_column => $attr_t->{column});
               $el->setAttributeNodeNS($attr);
             }
-            DATA($el, manakai_source_line => $token->{line}) if defined $token->{line};
-            DATA($el, manakai_source_column => $token->{column}) if defined $token->{column};
+            $self->_data($el, manakai_source_line => $token->{line}) if defined $token->{line};
+            $self->_data($el, manakai_source_column => $token->{column}) if defined $token->{column};
             $self->{open_elements}->[-1]->[0]->appendChild ($el);
             push @{$self->{open_elements}}, [$el, $el_category->{$token->{tag_name}} || 0];
           }
@@ -3256,11 +3277,11 @@ sub _tree_construction_main ($) {
       
       $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -3285,9 +3306,9 @@ sub _tree_construction_main ($) {
             
       $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
-        DATA($self->{head_element}, manakai_source_line => $token->{line})
+        $self->_data($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($self->{head_element}, manakai_source_column => $token->{column})
+        $self->_data($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
       
             $self->{open_elements}->[-1]->[0]->appendChild($self->{head_element});
@@ -3336,11 +3357,11 @@ sub _tree_construction_main ($) {
             
       $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
-        DATA($self->{head_element}, manakai_source_line => $token->{line})
+        $self->_data($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($self->{head_element}, manakai_source_column => $token->{column})
+        $self->_data($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($self->{head_element}, implied => __LINE__);
+        $self->_data($self->{head_element}, implied => __LINE__);
       
             $self->{open_elements}->[-1]->[0]->appendChild ($self->{head_element});
             $self->{insertion_mode} = AFTER_HEAD_IM;
@@ -3383,11 +3404,11 @@ sub _tree_construction_main ($) {
       
       $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -3414,11 +3435,11 @@ sub _tree_construction_main ($) {
           
       $self->{head_element} = $self->{document}->createElementNS((HTML_NS), 'head');
     
-        DATA($self->{head_element}, manakai_source_line => $token->{line})
+        $self->_data($self->{head_element}, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($self->{head_element}, manakai_source_column => $token->{column})
+        $self->_data($self->{head_element}, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($self->{head_element}, implied => __LINE__);
+        $self->_data($self->{head_element}, implied => __LINE__);
       
           $self->{open_elements}->[-1]->[0]->appendChild($self->{head_element});
 			 
@@ -3470,11 +3491,11 @@ sub _tree_construction_main ($) {
       
       $el = $self->{document}->createElementNS((HTML_NS), 'body');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'body'} || 0];
@@ -3898,11 +3919,11 @@ sub _tree_construction_main ($) {
       
       $el = $self->{document}->createElementNS((HTML_NS), 'tbody');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'tbody'} || 0];
@@ -3939,14 +3960,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -3966,11 +3987,11 @@ sub _tree_construction_main ($) {
       $el = $self->{document}->createElementNS
         ((HTML_NS), 'tr');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'tr'} || 0];
@@ -3999,14 +4020,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -4135,11 +4156,11 @@ sub _tree_construction_main ($) {
       
       $el = $self->{document}->createElementNS((HTML_NS), 'colgroup');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
       push @{$self->{open_elements}}, [$el, $el_category->{'colgroup'} || 0];
@@ -4176,14 +4197,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -4292,14 +4313,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -4342,14 +4363,14 @@ sub _tree_construction_main ($) {
            my $attr_t =   $token->{attributes}->{$attr_name};
            my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
            $attr->setValue($attr_t->{value});
-           DATA($attr, manakai_source_line => $attr_t->{line});
-           DATA($attr, manakai_source_column => $attr_t->{column});
+           $self->_data($attr, manakai_source_line => $attr_t->{line});
+           $self->_data($attr, manakai_source_column => $attr_t->{column});
            $el->setAttributeNodeNS($attr);
          }
        
-         DATA($el, manakai_source_line => $token->{line})
+         $self->_data($el, manakai_source_line => $token->{line})
              if defined $token->{line};
-         DATA($el, manakai_source_column => $token->{column})
+         $self->_data($el, manakai_source_column => $token->{column})
              if defined $token->{column};
        
        $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -4697,14 +4718,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -4813,14 +4834,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -4857,14 +4878,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -5258,14 +5279,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -5288,14 +5309,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $self->{open_elements}->[-1]->[0]->appendChild ($el);
@@ -5426,14 +5447,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -5456,14 +5477,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -5480,7 +5501,7 @@ sub _tree_construction_main ($) {
             $self->{change_encoding}
                 ->($self, $token->{attributes}->{charset}->{value}, $token);
             
-            DATA($meta_el->[0]->getAttributeNodeNS(undef, 'charset'),
+            $self->_data($meta_el->[0]->getAttributeNodeNS(undef, 'charset'),
                 manakai_has_reference => $token->{attributes}->{charset}->{has_reference});
 					 
           } elsif ($token->{attributes}->{content} and
@@ -5498,19 +5519,19 @@ sub _tree_construction_main ($) {
               ## in the {change_encoding} callback.
               $self->{change_encoding}
                   ->($self, defined $1 ? $1 : defined $2 ? $2 : $3, $token);
-              DATA($meta_el->[0]->getAttributeNodeNS(undef, 'content'),
+              $self->_data($meta_el->[0]->getAttributeNodeNS(undef, 'content'),
                   manakai_has_reference => $token->{attributes}->{content}->{has_reference});
             }
           }
         } else {
           if ($token->{attributes}->{charset}) {
             
-            DATA($meta_el->[0]->getAttributeNodeNS(undef, 'charset'),
+            $self->_data($meta_el->[0]->getAttributeNodeNS(undef, 'charset'),
                 manakai_has_reference => $token->{attributes}->{charset}->{has_reference});
           }
           if ($token->{attributes}->{content}) {
             
-            DATA($meta_el->[0]->getAttributeNodeNS (undef, 'content'),
+            $self->_data($meta_el->[0]->getAttributeNodeNS (undef, 'content'),
 					manakai_has_reference => $token->{attributes}->{content}->{has_reference});
           }
         }
@@ -5579,14 +5600,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -5640,7 +5661,7 @@ sub _tree_construction_main ($) {
 
         ## 2. Close the |p| element, if any.
         if ($token->{tag_name} ne 'table' or # The Hixie Quirk
-            (DATA($self->{document})->{'manakai_compat_mode'}||'') ne 'quirks') {
+            ($self->_data($self->{document})->{'manakai_compat_mode'}||'') ne 'quirks') {
           ## "have a |p| element in button scope"
           INSCOPE: for (reverse @{$self->{open_elements}}) {
             if ($_->[1] == P_EL) {
@@ -5683,14 +5704,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -5849,14 +5870,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -5958,14 +5979,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6008,14 +6029,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6084,15 +6105,15 @@ sub _tree_construction_main ($) {
           if ($attr)
           {
             $attr->setValue($attr_t->{value});
-            DATA($attr, manakai_source_line => $attr_t->{line});
-            DATA($attr, manakai_source_column => $attr_t->{column});
+            $self->_data($attr, manakai_source_line => $attr_t->{line});
+            $self->_data($attr, manakai_source_column => $attr_t->{column});
             $el->setAttributeNodeNS($attr);
           }
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6143,14 +6164,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6200,14 +6221,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6334,14 +6355,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6398,14 +6419,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6452,14 +6473,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6520,15 +6541,15 @@ sub _tree_construction_main ($) {
 			if ($attr)
 			{
 				 $attr->setValue($attr_t->{value});
-				 DATA($attr, manakai_source_line => $attr_t->{line});
-				 DATA($attr, manakai_source_column => $attr_t->{column});
+				 $self->_data($attr, manakai_source_line => $attr_t->{line});
+				 $self->_data($attr, manakai_source_column => $attr_t->{column});
 				 $el->setAttributeNodeNS ($attr);
 			 }
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6580,14 +6601,14 @@ sub _tree_construction_main ($) {
           my $attr_t =   $token->{attributes}->{$attr_name};
           my $attr = $self->{document}->createAttributeNS(undef, $attr_name);
           $attr->setValue($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6625,14 +6646,14 @@ sub _tree_construction_main ($) {
           my $attr = $self->{document}->createAttributeNS (undef, $attr_name);
 			 next ATR unless ref($attr);
           $attr->setValue ($attr_t->{value});
-          DATA($attr, manakai_source_line => $attr_t->{line});
-          DATA($attr, manakai_source_column => $attr_t->{column});
+          $self->_data($attr, manakai_source_line => $attr_t->{line});
+          $self->_data($attr, manakai_source_column => $attr_t->{column});
           $el->setAttributeNodeNS ($attr);
         }
       
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
       $insert->($self, $el, $open_tables);
@@ -6999,11 +7020,11 @@ sub _tree_construction_main ($) {
           
       $el = $self->{document}->createElementNS((HTML_NS), 'p');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
-        DATA($el, implied => __LINE__);
+        $self->_data($el, implied => __LINE__);
       
           $insert->($self, $el, $open_tables);
           ## NOTE: Not inserted into |$self->{open_elements}|.
@@ -7035,9 +7056,9 @@ sub _tree_construction_main ($) {
         my $el;        
       $el = $self->{document}->createElementNS((HTML_NS), 'br');
     
-        DATA($el, manakai_source_line => $token->{line})
+        $self->_data($el, manakai_source_line => $token->{line})
             if defined $token->{line};
-        DATA($el, manakai_source_column => $token->{column})
+        $self->_data($el, manakai_source_column => $token->{column})
             if defined $token->{column};
       
         $insert->($self, $el, $open_tables);
@@ -7170,11 +7191,11 @@ sub set_inner_html ($$$$;$) {
     my $this_doc = $node->ownerDocument;
 	 my $implementation = ref($this_doc);
 	 my $doc = $implementation->createDocument;
-    DATA($doc, manakai_is_html => 1);
+    $self->_data($doc, manakai_is_html => 1);
 
     ## F2. Propagate quirkness flag
     my $node_doc = $node->ownerDocument;
-    DATA($doc)->{'manakai_compat_mode'} = DATA($node_doc, 'manakai_compat_mode');
+    $self->_data($doc)->{'manakai_compat_mode'} = $self->_data($node_doc, 'manakai_compat_mode');
 
     ## F3. Create an HTML parser
     my $p = $self;
