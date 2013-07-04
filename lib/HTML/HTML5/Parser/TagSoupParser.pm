@@ -740,7 +740,7 @@ sub parse_byte_stream ($$$$;$$) {
     $x{error}->(
         level => $x{level}, layer => $x{layer},
         line  => $x{line}, column => $x{column},
-        %opt, $type);
+        %opt, type => $type);
     if ($opt{octets}) {
       ${$opt{octets}} = "\x{FFFD}"; # relacement character
     }
