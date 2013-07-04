@@ -456,8 +456,15 @@ Changes include:
 =item C<new>
 
   $parser = HTML::HTML5::Parser->new;
+  # or
+  $parser = HTML::HTML5::Parser->new(no_cache => 1);
 
-The constructor does not do anything interesting.
+The constructor does nothing interesting besides take one flag
+argument, C<no_cache =E<gt> 1>, to disable the global element metadata
+cache. Disabling the cache is handy for conserving memory if you parse
+a large number of documents, however, class methods such as
+C</source_line> will not work, and must be run from an instance of
+this parser.
 
 =back
 
