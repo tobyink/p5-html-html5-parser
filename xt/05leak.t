@@ -3,7 +3,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-use Test::More;
+use Test::More skip_all => 'no prescribed tests for memory leaks';
 
 use Devel::Gladiator qw(walk_arena arena_ref_counts arena_table);
 use Devel::FindRef;
@@ -19,7 +19,7 @@ my $yes = 1;
 require HTML::HTML5::Parser;
 
     {
-        my $p = HTML::HTML5::Parser->new;
+        my $p = HTML::HTML5::Parser->new(no_cache => 1);
 #diag(arena_table);
         my $doc = $p->parse_string($data);
         undef $p;
@@ -32,7 +32,7 @@ for my $sv (@{walk_arena()}) {
 diag(arena_table);
 
     {
-        my $p = HTML::HTML5::Parser->new;
+        my $p = HTML::HTML5::Parser->new(no_cache => 1);
 #diag(arena_table);
         my $doc = $p->parse_string($data);
         undef $p;
@@ -42,11 +42,11 @@ diag(arena_table);
 diag(scalar keys %seen);
 for my $sv (@{walk_arena()}) {
     #next unless blessed $sv;
-    #next unless $sv =~ /HTML/;
+    next unless $sv =~ /HTML/;
     next if $sv =~ /Charset::Info/;
     next if refaddr $sv == refaddr \$yes;
     next if $seen{refaddr $sv};
-#    diag(Devel::FindRef::track($sv));
+    diag(Devel::FindRef::track($sv));
 }
 
 __DATA__

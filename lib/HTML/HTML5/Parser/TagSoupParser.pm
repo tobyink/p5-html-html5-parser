@@ -45,16 +45,16 @@ BEGIN
 		$element->appendText($text);
 		return;
 	}
-	
+
 	my $textnode = XML::LibXML::Text->new($text);
-	
+
 	if ($token)
 	{
-		#$self->_data($textnode, manakai_source_line => $token->{line})
-		#	if defined $token->{line};
-		#$self->_data($textnode, manakai_source_column => $token->{column})
-		#	if defined $token->{column};
-		
+		$parser->_data($textnode, manakai_source_line => $token->{line})
+            if $parser and defined $token->{line};
+		$parser->_data($textnode, manakai_source_column => $token->{column})
+            if $parser and defined $token->{column};
+
 		if (HAS_XLXDSLN
 		and exists $token->{line}
 		and int($token->{line})
@@ -63,11 +63,15 @@ BEGIN
 			$textnode->XML::LibXML::Devel::SetLineNumber::set_line_number($token->{line});
 		}
 	}
-	
+
 	return $element->appendChild($textnode);
 };
 
-#our $DATA;
+our $DATA = {};
+sub DATA {
+    _data(undef, @_);
+}
+
 sub _data
 {
     my $self = shift;
@@ -84,7 +88,13 @@ sub _data
 	# node than refaddr does. However, it's not a supported use
 	# for XML::LibXML::Devel, so it might cause failures. We'll see.
 	my $oaddr = XML::LibXML::Devel::node_from_perl($object);
-	my $data  = $self->{_debug_cache}{$oaddr} ||= {};
+	my $data;
+    if (ref $self) {
+        $data = $self->{_debug_cache}{$oaddr} ||= {};
+    }
+    else {
+        $data = $DATA->{$oaddr} ||= {};
+    }
 
 	if (HAS_XLXDSLN
 	and defined $k
@@ -944,8 +954,9 @@ sub parse_char_stream ($$$;$$) {
   return $doc;
 } # parse_char_stream
 
-sub new ($) {
+sub new ($;@) {
   my $class = shift;
+  my %p = @_;
   my $self = bless {
     level => {
       must => 'm',
@@ -955,7 +966,7 @@ sub new ($) {
       info => 'i',
       uncertain => 'u',
     },
-    _debug_cache => {},
+    _debug_cache => $p{no_cache} ? {} : $DATA,
   }, $class;
   $self->{set_nc} = sub {
     $self->{nc} = -1;
