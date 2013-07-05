@@ -416,6 +416,22 @@ sub DESTROY {}
 
 __END__
 
+=pod
+
+=encoding utf8
+
+=begin stopwords
+
+XML::LibXML-like
+XML::LibXML-Compatible
+'utf-8')
+foobar
+doctype:
+html
+implictness
+
+=end stopwords
+
 =head1 NAME
 
 HTML::HTML5::Parser - parse HTML reliably
@@ -530,7 +546,7 @@ HTML5 parsing; C<load_html> just goes straight for HTML5.
 
   $fragment = $parser->parse_balanced_chunk( $string [,\%opts] );
 
-This method is roughly equivlaent to XML::LibXML's method of the same
+This method is roughly equivalent to XML::LibXML's method of the same
 name, but unlike XML::LibXML, and despite its name it does not require
 the chunk to be "balanced". This method is somewhat black magic, but
 should work, and do the proper thing in most cases. Of course, the
@@ -741,7 +757,7 @@ In list context, returns a tuple: $line, $column, $implicitness.
 Tab characters count as one column, not eight.
 
 $implicitness indicates that the node was not explicitly marked
-up in the source code, but its existance was inferred by the parser.
+up in the source code, but its existence was inferred by the parser.
 For example, in the following markup, the HTML, TITLE and P elements
 are explicit, but the HEAD and BODY elements are implicit.
 

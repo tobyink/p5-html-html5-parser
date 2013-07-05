@@ -88,7 +88,7 @@ sub to_string
 
 =head1 NAME
 
-HTML::HTML5::Parser::Error - an error that occured during parsing
+HTML::HTML5::Parser::Error - an error that occurred during parsing
 
 =head1 DESCRIPTION
 
