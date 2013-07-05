@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+## skip Test::Tabs
 
 use 5.010;
 use HTML::HTML5::Parser;
