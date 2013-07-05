@@ -690,9 +690,6 @@ For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 Public Identifier of the DTD used (if any).
 
-This may be called as a class or object method. (It makes
-no difference.)
-
 =item C<dtd_system_id>
 
   $sysid = $parser->dtd_system_id( $doc );
@@ -701,13 +698,10 @@ For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 System Identifier of the DTD used (if any).
 
-This may be called as a class or object method. (It makes
-no difference.)
-
 =item C<dtd_element>
 
   $element = $parser->dtd_element( $doc );
-  
+
 For an XML::LibXML::Document which has been returned by
 HTML::HTML5::Parser, using this method will tell you the
 root element declared in the DTD used (if any). That is,
@@ -721,17 +715,11 @@ This may return the empty string if a DTD was present but
 did not contain a root element; or undef if no DTD was
 present.
 
-This may be called as a class or object method. (It makes
-no difference.)
-
 =item C<compat_mode>
 
   $mode = $parser->compat_mode( $doc );
   
 Returns 'quirks', 'limited quirks' or undef (standards mode).
-
-This may be called as a class or object method. (It makes
-no difference.)
 
 =item C<charset>
 
@@ -743,7 +731,7 @@ The character set apparently used by the document.
 
   ($line, $col) = $parser->source_line( $node );
   $line = $parser->source_line( $node );
-  
+
 In scalar context, C<source_line> returns the line number of the
 source code that started a particular node (element, attribute or
 comment).
