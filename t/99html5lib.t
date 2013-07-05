@@ -2,20 +2,22 @@ use Test::More;
 use HTML::HTML5::Parser;
 
 BEGIN {
-	eval { require Mo; 1 }
-		or plan skip_all => 'Need Mo OO!'
-}
+	eval { require Moo; 1 } or plan skip_all => 'Need Moo!'
+};
 
 {
 	package XML::LibXML::Document;
 	sub pythonDebug
 	{
 		my $self = shift;
+		my ($indent, $parser) = @_;
+		$indent = '' unless defined $indent;
+		
 		my $return;
 		
-		my $element = HTML::HTML5::Parser->dtd_element($self);
-		my $public  = HTML::HTML5::Parser->dtd_public_id($self) || '';
-		my $system  = HTML::HTML5::Parser->dtd_system_id($self) || '';
+		my $element = $parser->dtd_element($self);
+		my $public  = $parser->dtd_public_id($self) || '';
+		my $system  = $parser->dtd_system_id($self) || '';
 		
 		if (defined $element)
 		{
@@ -27,7 +29,7 @@ BEGIN {
 				);
 		}
 		
-		$return .= $_->pythonDebug(q{| }) foreach $self->childNodes;
+		$return .= $_->pythonDebug(q{| }, $parser) foreach $self->childNodes;
 		return $return;
 	}
 }
@@ -36,7 +38,8 @@ BEGIN {
 	package XML::LibXML::DocumentFragment;
 	sub pythonDebug
 	{
-		my ($self, $indent) = @_;
+		my $self = shift;
+		my ($indent, $parser) = @_;
 		$indent = '' unless defined $indent;
 		
 		$self->normalize;
@@ -44,7 +47,7 @@ BEGIN {
 		my $return;
 		foreach ($self->childNodes)
 		{
-			$return .= $_->pythonDebug($indent . q{| });
+			$return .= $_->pythonDebug($indent . q{| }, $parser);
 		}		
 		return $return;
 	}
@@ -54,7 +57,8 @@ BEGIN {
 	package XML::LibXML::Element;
 	sub pythonDebug
 	{
-		my ($self, $indent) = @_;
+		my $self = shift;
+		my ($indent, $parser) = @_;
 		$indent = '' unless defined $indent;
 		
 		$self->normalize;
@@ -70,7 +74,7 @@ BEGIN {
 			$self->attributes;
 		foreach (@attribs)
 		{
-			$return .= $_->pythonDebug($indent . q{  });
+			$return .= $_->pythonDebug($indent . q{  }, $parser);
 		}
 		
 		if ($self->localname eq 'noscript')
@@ -82,7 +86,7 @@ BEGIN {
 		{
 			foreach ($self->childNodes)
 			{
-				$return .= $_->pythonDebug($indent . q{  });
+				$return .= $_->pythonDebug($indent . q{  }, $parser);
 			}
 		}
 		
@@ -94,8 +98,10 @@ BEGIN {
 	package XML::LibXML::Text;
 	sub pythonDebug
 	{
-		my ($self, $indent) = @_;
+		my $self = shift;
+		my ($indent, $parser) = @_;
 		$indent = '' unless defined $indent;
+		
 		return sprintf("%s\"%s\"\n", $indent, $self->data);
 	}
 }
@@ -104,8 +110,10 @@ BEGIN {
 	package XML::LibXML::Comment;
 	sub pythonDebug
 	{
-		my ($self, $indent) = @_;
+		my $self = shift;
+		my ($indent, $parser) = @_;
 		$indent = '' unless defined $indent;
+		
 		return sprintf("%s<!-- %s -->\n", $indent, $self->data);
 	}
 }
@@ -114,8 +122,10 @@ BEGIN {
 	package XML::LibXML::Attr;
 	sub pythonDebug
 	{
-		my ($self, $indent) = @_;
+		my $self = shift;
+		my ($indent, $parser) = @_;
 		$indent = '' unless defined $indent;
+		
 		return sprintf("%s%s %s=\"%s\"\n", $indent, split(/:/, $self->nodeName), $self->value)
 			if $self->namespaceURI && $self->nodeName=~/:/;
 		return sprintf("%s%s=\"%s\"\n", $indent, $self->localname, $self->value);
@@ -125,14 +135,15 @@ BEGIN {
 {
 	package Local::HTML5Lib::Test;
 	
-	use Mo;
+	use Moo;
 	
-	has test_file         => (isa => 'Local::HTML5Lib::TestFile');
-	has test_number       => (isa => 'Num');
-	has data              => (isa => 'Str');
-	has errors            => (isa => 'Str');
-	has document          => (isa => 'Str');	
-	has document_fragment => (isa => 'Str');
+	has test_file         => (is => 'rw');
+	has test_number       => (is => 'rw');
+	has data              => (is => 'rw');
+	has errors            => (is => 'rw');
+	has document          => (is => 'rw');	
+	has document_fragment => (is => 'rw');
+	has parser            => (is => 'lazy', builder => '_build_parser');
 	
 	sub test_id
 	{
@@ -149,21 +160,27 @@ BEGIN {
 		
 		if ($self->document_fragment)
 		{
-			return HTML::HTML5::Parser->new->parse_balanced_chunk(
+			return $self->parser->parse_balanced_chunk(
 				$self->data,
 				{within => $self->document_fragment},
-				);
+			);
 		}
 		
 		return eval {
-			HTML::HTML5::Parser->new->parse_string($self->data);
+			$self->parser->parse_string($self->data);
 		} || do {
 			my $e   = $@;
-			my $xml = XML::LibXML::Document->new('1.0', 'utf-8');
+			my $xml = 'XML::LibXML::Document'->new('1.0', 'utf-8');
 			$xml->setDocumentElement( $xml->createElementNS('http://www.w3.org/1999/xhtml', 'html') );
 			$xml->documentElement->appendText("ERROR: $e");
 			$xml;
 		}
+	}
+	
+	sub _build_parser
+	{
+		require HTML::HTML5::Parser;
+		'HTML::HTML5::Parser'->new;
 	}
 	
 	sub __uniscape
@@ -179,7 +196,7 @@ BEGIN {
 	{
 		my ($self) = @_;
 		my $expected = $self->document."\n";
-		my $got      = $self->dom->pythonDebug;
+		my $got      = $self->dom->pythonDebug(undef, $self->parser);
 		utf8::decode($got);
 		
 		local $Test::Builder::Level = $Test::Builder::Level + 1;
