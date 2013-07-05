@@ -1,5 +1,7 @@
 package HTML::HTML5::Parser::TagSoupParser;
 
+## skip Test::Tabs
+
 # This is a port of the Whatpm::HTML package away from dependencies
 # on manakai, and towards CPAN and XML::LibXML.
 

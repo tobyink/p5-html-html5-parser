@@ -1,5 +1,6 @@
 package HTML::HTML5::Parser;
 
+## skip Test::Tabs
 use 5.008001;
 use strict;
 use warnings;

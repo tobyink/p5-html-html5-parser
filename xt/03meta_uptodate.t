@@ -1,3 +1,5 @@
+use XT::Util;
 use Test::More tests => 1;
 use Test::RDF::DOAP::Version;
-doap_version_ok('HTML-HTML5-Parser', 'HTML::HTML5::Parser');
+doap_version_ok(__CONFIG__->{package}, __CONFIG__->{version_from});
+

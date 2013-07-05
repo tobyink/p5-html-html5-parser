@@ -1,4 +1,5 @@
 package HTML::HTML5::Parser::Charset::Info;
+## skip Test::Tabs
 use strict;
 our $VERSION='0.300';
 

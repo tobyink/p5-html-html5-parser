@@ -1,5 +1,6 @@
 package HTML::HTML5::Parser::Charset::UniversalCharDet;
 
+## skip Test::Tabs
 use strict;
 use IO::HTML ();
 

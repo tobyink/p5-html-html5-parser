@@ -1,3 +1,4 @@
+## skip Test::Tabs
 use 5.008;
 use strict;
 use lib 'lib';

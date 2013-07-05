@@ -1,5 +1,6 @@
 #!perl
 
+## skip Test::Tabs
 use strict;
 use warnings FATAL => 'all';
 

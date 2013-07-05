@@ -1,3 +1,4 @@
+## skip Test::Tabs
 use Test::More tests => 1;
 use HTML::HTML5::Parser;
 

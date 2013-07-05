@@ -1,4 +1,5 @@
 package HTML::HTML5::Parser::Tokenizer; # -*- Perl -*-
+## skip Test::Tabs
 use strict;
 our $VERSION='0.300';
 
