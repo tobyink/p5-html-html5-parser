@@ -5,8 +5,13 @@ use strict;
 use warnings FATAL => 'all';
 
 use Test::More
-    # tests => 1;
-    skip_all => 'Enable this test to hunt for memory leaks in the parser.';
+	# tests => 1,
+	skip_all => 'I get a segfault running this test at all!';
+
+BEGIN {
+    skip_all => 'please set $ENV{RELEASE_TESTING} to enable this test'
+        unless $ENV{RELEASE_TESTING} || $ENV{EXTENDED_TESTING}
+};
 
 use Scalar::Util qw(blessed refaddr);
 
