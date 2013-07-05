@@ -281,3 +281,27 @@ my:v_0-208
 			dcs:thanks [ foaf:name "Luben Karavelov" ];
 		];
 	] .
+
+my:project :release my:v_0-300 .
+my:v_0-300
+	a               :Version ;
+	dc:issued       "2012-12-06"^^xsd:date ;
+	:revision       "0.300"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.300.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-208 ;
+		dcs:item [
+			a dcs:Bugfix;
+			rdfs:label "Fix many major memory leaks.";
+			dcs:blame [ foaf:name "Dorian Taylor"; foaf:nick "DORIAN" ];
+			dcs:fixes <tdb:2013:https://github.com/tobyink/p5-html-html5-parser/pull/1>;
+		];
+		dcs:item [
+			a dcs:Change;
+			rdfs:label "Memory leak fix necessitated some API changes; in particular some methods which were available as class methods are now object methods only."@en;
+		];
+		dcs:item [
+			a dcs:Packaging;
+			rdfs:label "t/99html5lib.t now uses Moo instead of Mo."@en;
+		];
+	] .

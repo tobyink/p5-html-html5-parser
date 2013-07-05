@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 our $AUTOLOAD;
-our $VERSION = '0.208';
+our $VERSION = '0.300';
 
 use Carp;
 use HTML::HTML5::Parser::Error;
