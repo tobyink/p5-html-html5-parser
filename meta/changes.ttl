@@ -285,7 +285,7 @@ my:v_0-208
 my:project :release my:v_0-300 .
 my:v_0-300
 	a               :Version ;
-	dc:issued       "2012-12-06"^^xsd:date ;
+	dc:issued       "2013-07-06"^^xsd:date ;
 	:revision       "0.300"^^xsd:string ;
 	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.300.tar.gz> ;
 	dcs:changeset [
@@ -303,5 +303,21 @@ my:v_0-300
 		dcs:item [
 			a dcs:Packaging;
 			rdfs:label "t/99html5lib.t now uses Moo instead of Mo."@en;
+		];
+	] .
+
+my:project :release my:v_0-301 .
+my:v_0-301
+	a               :Version ;
+	dc:issued       "2013-07-08"^^xsd:date ;
+	:revision       "0.301"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.301.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-300 ;
+		dcs:item [
+			a dcs:Bugfix;
+			rdfs:label "Fix t/99html5lib.t still using Mo in one place."@en;
+			dcs:thanks [ foaf:name "Fitz Elliott"; foaf:mbox <mailto:fitz.elliott@gmail.com> ];
+			dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/86774>;
 		];
 	] .

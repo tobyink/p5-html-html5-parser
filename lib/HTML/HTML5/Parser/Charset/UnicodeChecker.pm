@@ -2,7 +2,7 @@ package HTML::HTML5::Parser::Charset::UnicodeChecker;
 ## skip Test::Tabs
 use strict;
 
-our $VERSION = '0.300';
+our $VERSION = '0.301';
 
 ## NOTE: For more information (including rationals of checks performed
 ## in this module), see
