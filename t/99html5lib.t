@@ -228,9 +228,9 @@ BEGIN {
 	
 	use Moo;
 	
-	has filename   => (is => "ro");
-	has tests      => (is => "ro");
-	has last_score => (is => "ro");
+	has filename   => (is => "rw");
+	has tests      => (is => "rw");
+	has last_score => (is => "rw");
 	
 	sub read_file
 	{
