@@ -41,7 +41,7 @@ sub parse_file
 	
 	unless (blessed($file) and $file->isa('URI'))
 	{
-		if ($file =~ /^[a-z0-9_\.-]+:\S+$/i)
+		if ($file =~ /^[a-z][a-z0-9_\.\+-]+:\S+$/i)
 			{ $file = URI->new($file); }
 		else
 			{ $file = URI::file->new_abs($file); }
