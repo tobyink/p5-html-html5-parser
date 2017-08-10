@@ -33,7 +33,7 @@ L<https://rt.cpan.org/Public/Bug/Display.html?id=96399>.
 =head1 AUTHOR
 
 Vincent Lefevre E<lt>vincent@vinc17.netE<gt>,
-Kjetil Kjernsmo E<lt>kjetil@kjernsmo.netE<gt>.
+Kjetil Kjernsmo E<lt>kjetilk@cpan.orgE<gt>.
 
 =head1 COPYRIGHT AND LICENCE
 
