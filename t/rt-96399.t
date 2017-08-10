@@ -12,13 +12,17 @@ binmode STDOUT, ':encoding(UTF-8)';  # for stdout.
 
 my $file = $Bin . '/data/arrow.html';
 
-my $parser = HTML::HTML5::Parser->new;
-my $doc = $parser->parse_file($file);
+tests($file);
 
-is($parser->charset($doc), 'utf-8', 'Correct charset in arrow example');
-like($doc->toString, qr/\N{U+2193}/, 'Arrow found in string');
-like($doc->toString, qr/title/, 'Word title found in string');
+sub tests {
+	my $file = shift;
+	my $parser = HTML::HTML5::Parser->new;
+	my $doc = $parser->parse_file($file);
 
+	is($parser->charset($doc), 'utf-8', 'Correct charset in arrow example');
+	like($doc->toString, qr/\N{U+2193}/, 'Arrow found in string');
+	like($doc->toString, qr/title/, 'Word title found in string');
+}
 
 
 =head1 PURPOSE
