@@ -10,18 +10,24 @@ use open ':encoding(UTF-8)';         # for the file arguments.
 binmode STDIN, ':encoding(UTF-8)';   # for stdin.
 binmode STDOUT, ':encoding(UTF-8)';  # for stdout.
 
-my $file = $Bin . '/data/arrow.html';
+my %chars = ('arrow.html'  => qr/\N{U+2193}/,
+				 'eacute.html' => qr/\N{U+00E9}/,
+				);
 
-tests($file);
+my @files = glob($Bin . "/data/*.html");
+
+foreach my $file (@files) {
+	tests($file);
+}
 
 sub tests {
 	my $file = shift;
 	my $parser = HTML::HTML5::Parser->new;
 	my $doc = $parser->parse_file($file);
-
-	is($parser->charset($doc), 'utf-8', 'Correct charset in arrow example');
-	like($doc->toString, qr/\N{U+2193}/, 'Arrow found in string');
-	like($doc->toString, qr/title/, 'Word title found in string');
+	my ($key) = $file =~ m|/([^/]+?)$|;
+	is($parser->charset($doc), 'utf-8', "Correct charset in $key example");
+	like($doc->toString, $chars{$key}, 'Unicode char found in string for ' . $key);
+	like($doc->toString, qr/title/, 'Word title found in string for' . $key);
 }
 
 
