@@ -3,26 +3,23 @@
 use strict;
 use Test::More;
 use_ok('HTML::HTML5::Parser');
+use FindBin qw($Bin);
 
 use utf8;                            # for the characters in the script.
 use open ':encoding(UTF-8)';         # for the file arguments.
 binmode STDIN, ':encoding(UTF-8)';   # for stdin.
 binmode STDOUT, ':encoding(UTF-8)';  # for stdout.
 
-@ARGV == 1 or die "Usage: $0 <file.html>\n";
+my $file = $Bin . '/data/arrow.html';
 
 my $parser = HTML::HTML5::Parser->new;
-my $doc = $parser->parse_file($ARGV[0]);
-print "Charset: '", $parser->charset($doc), "'\n";
-print $doc->toString();
+my $doc = $parser->parse_file($file);
+
+is($parser->charset($doc), 'utf-8', 'Correct charset in arrow example');
+like($doc->toString, qr/\N{U+2193}/, 'Arrow found in string');
+like($doc->toString, qr/title/, 'Word title found in string');
 
 
-my $dom = HTML::HTML5::Parser::->load_html(IO => \*DATA);
-
-is(
-	$dom->documentElement->lookupNamespaceURI('fb'),
-	'http://ogp.me/ns/fb#',
-);
 
 =head1 PURPOSE
 
