@@ -13,6 +13,7 @@ use HTML::HTML5::Parser::Error;
 use HTML::HTML5::Parser::TagSoupParser;
 use Scalar::Util qw(blessed);
 use URI::file;
+use Encode qw(encode_utf8);
 use XML::LibXML;
 
 BEGIN {
@@ -102,6 +103,11 @@ sub parse_string
 	{
         # XXX AGAIN DO THIS TO STOP ENORMOUS MEMORY LEAKS
         my ($errh, $errors) = @{$self}{qw(error_handler errors)};
+        
+        if (utf8::is_utf8($text)) {
+			$text	= encode_utf8($text);
+		}
+		
 		$self->{parser}->parse_byte_string(
             $opts->{'encoding'}, $text, $dom,
             sub {
