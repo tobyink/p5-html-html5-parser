@@ -7,6 +7,7 @@
 	:version_from _:main ;
 	:readme_from _:main ;
 	:test_requires "Test::More 0.61" ;
+	:test_requires "FindBin" ;
 	:requires "Try::Tiny" ;
 	:requires "IO::HTML" ;
 	:requires "HTML::HTML5::Entities 0.002" ;
