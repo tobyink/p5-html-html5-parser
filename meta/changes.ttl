@@ -333,14 +333,14 @@ my:v_0-991
 		dcs:item [
 			a dcs:Bugfix;
 			rdfs:label "Fix encoding issues."@en;
-			dcs:thanks [ foaf:name "Gregory Williams" ];
-			dcs:thanks [ foaf:name "Kjetil Kjernsmo" ];
+			dcs:blame [ foaf:name "Gregory Williams" ];
+			dcs:blame [ foaf:name "Kjetil Kjernsmo" ];
 			dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/96399>;
 		];
 		dcs:item [
 			a dcs:Bugfix;
 			rdfs:label "Don't install a global __WARN__ handler in BEGIN."@en;
-			dcs:thanks [ foaf:name "Alex Vandiver" ];
+			dcs:blame [ foaf:name "Alex Vandiver" ];
 		];
 		dcs:item [
 			a dcs:Packaging;
