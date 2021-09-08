@@ -26,9 +26,9 @@ it under the same terms as Perl itself.
 =cut
 
 use Test::More tests => 2;
+use Test::Requires 'LWP::UserAgent';
 use HTML::HTML5::Parser;
 use Encode qw(decode_utf8);
-use Devel::Peek;
 
 subtest 'U+2193 DOWNWARDS ARROW' => sub {
 	my $filename  = 't/data/rt-96399-1.html';
