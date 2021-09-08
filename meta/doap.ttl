@@ -16,8 +16,8 @@ my:project
 	:programming-language  "Perl" ;
 	:homepage       <https://metacpan.org/release/HTML-HTML5-Parser> ;
 	:download-page  <https://metacpan.org/release/HTML-HTML5-Parser> ;
-	:bug-database   <http://rt.cpan.org/Dist/Display.html?Queue=HTML-HTML5-Parser> ;
-	:repository     [ a :SVNRepository ; :browse <http://goddamn.co.uk/svn-web/perlmods/browse/HTML-HTML5-Parser/> ] ;
+	:bug-database   <https://github.com/tobyink/p5-html-html5-parser/issues> ;
+	:repository     [ a :GitRepository; :browse <https://github.com/tobyink/p5-html-html5-parser> ];
 	:maintainer     toby:i ;
 	:developer      toby:i , my:dev-wakaba ;
 	:documenter     toby:i ;
