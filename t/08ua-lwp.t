@@ -7,8 +7,8 @@ eval { require LWP::UserAgent; 1; }
 
 $HTML::HTML5::Parser::UA::NO_LWP = '';
 
-do '07ua.t' if -s '07ua.t';
-do 't/07ua.t' if -s 't/07ua.t';
+do './07ua.t' if -s '07ua.t';
+do './t/07ua.t' if -s 't/07ua.t';
 
 =head1 PURPOSE
 
