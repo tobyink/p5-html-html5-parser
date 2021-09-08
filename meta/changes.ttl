@@ -355,3 +355,21 @@ my:v_0-991
 			rdfs:label "Better regexp for differentiating between filenames and URIs."@en;
 		];
 	] .
+
+my:project :release my:v_0-992 .
+my:v_0-992
+	a               :Version ;
+	dc:issued       "2021-09-08"^^xsd:date ;
+	:revision       "0.992"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.992.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-991 ;
+		dcs:item [
+			a dcs:Packaging;
+			rdfs:label "Point repo at Github."@en;
+		];
+		dcs:item [
+			a dcs:Packaging;
+			rdfs:label "Point issue tracker at Github."@en;
+		];
+	] .

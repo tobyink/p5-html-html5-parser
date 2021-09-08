@@ -3,7 +3,7 @@ package HTML::HTML5::Parser::Charset::DecodeHandle;
 use strict;
 use warnings;
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 ## NOTE: |Message::Charset::Info| uses this module without calling
 ## the constructor.

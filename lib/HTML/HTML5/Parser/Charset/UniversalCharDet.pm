@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use IO::HTML ();
 
-our $VERSION='0.991';
+our $VERSION='0.992';
 our $DEBUG;
 
 # this really shouldn't work, but for some reason it does...
