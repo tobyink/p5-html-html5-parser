@@ -1,8 +1,9 @@
 package HTML::HTML5::Parser::Charset::DecodeHandle;
 ## skip Test::Tabs
 use strict;
+use warnings;
 
-our $VERSION = '0.301';
+our $VERSION = '0.991';
 
 ## NOTE: |Message::Charset::Info| uses this module without calling
 ## the constructor.

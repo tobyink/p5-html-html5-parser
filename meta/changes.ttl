@@ -321,3 +321,37 @@ my:v_0-301
 			dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/86774>;
 		];
 	] .
+
+my:project :release my:v_0-991 .
+my:v_0-991
+	a               :Version ;
+	dc:issued       "2021-09-08"^^xsd:date ;
+	:revision       "0.991"^^xsd:string ;
+	:file-release   <http://backpan.cpan.org/authors/id/T/TO/TOBYINK/HTML-HTML5-Parser-0.991.tar.gz> ;
+	dcs:changeset [
+		dcs:versus my:v_0-301 ;
+		dcs:item [
+			a dcs:Bugfix;
+			rdfs:label "Fix encoding issues."@en;
+			dcs:thanks [ foaf:name "Gregory Williams" ];
+			dcs:thanks [ foaf:name "Kjetil Kjernsmo" ];
+			dcs:fixes <http://purl.org/NET/cpan-uri/rt/ticket/96399>;
+		];
+		dcs:item [
+			a dcs:Bugfix;
+			rdfs:label "Don't install a global __WARN__ handler in BEGIN."@en;
+			dcs:thanks [ foaf:name "Alex Vandiver" ];
+		];
+		dcs:item [
+			a dcs:Packaging;
+			rdfs:label "Modernize packaging in general."@en;
+		];
+		dcs:item [
+			a dcs:Bugfix;
+			rdfs:label "Don't assume @INC contains ."@en;
+		];
+		dcs:item [
+			a dcs:Bugfix;
+			rdfs:label "Better regexp for differentiating between filenames and URIs."@en;
+		];
+	] .
