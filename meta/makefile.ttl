@@ -13,6 +13,7 @@
 	:runtime-requirement    [ :on "Scalar::Util"^^:CpanId ];
 	:runtime-requirement    [ :on "URI::file"^^:CpanId ];
 	:test-requirement       [ :on "Test::More 0.61"^^:CpanId ];
+	:test-requirement       [ :on "Test::Requires"^^:CpanId ];
 	:test-requirement       [ :on "FindBin"^^:CpanId ];
 	:test-recommendation    [ :on "LWP::UserAgent"^^:CpanId ];
 	:develop-recommendation [ :on "Dist::Inkt 0.001"^^:CpanId ];
